@@ -54,6 +54,12 @@ ruleforge generate . -f claude
 # Preview without writing anything
 ruleforge preview .
 
+# Audit existing assistant rules for missing guidance
+ruleforge audit .
+
+# Fail CI if the rules are too thin
+ruleforge audit . --min-score 80
+
 # Overwrite existing files
 ruleforge generate . --overwrite
 
@@ -109,6 +115,25 @@ Package manager: poetry
 | `claude` | `CLAUDE.md` | Claude Code, Claude Desktop |
 | `cursor` | `.cursorrules` | Cursor IDE |
 | `copilot` | `.github/copilot-instructions.md` | GitHub Copilot |
+
+## Rule Audits
+
+RuleForge can also check rule files you already wrote. It looks for the parts that usually make AI coding agents useful in a real repository:
+
+- project context and detected stack
+- concrete test, lint, typecheck, or build commands
+- editing boundaries and generated-file warnings
+- secret / token / `.env` handling
+- git, PR, CI, and review workflow
+- assistant behavior expectations
+
+```bash
+ruleforge audit .
+ruleforge audit . --format json
+ruleforge audit . --min-score 80
+```
+
+This is useful for CI or for checking whether a hand-written `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, or Copilot instructions file is specific enough to trust.
 
 ## Python API
 

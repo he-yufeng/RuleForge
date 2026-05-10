@@ -10,6 +10,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from ruleforge.analyzer import analyze_project
+from ruleforge.audit import audit_project
 from ruleforge.generator import RuleFormat, generate_rules, write_rules
 
 console = Console()
@@ -145,6 +146,51 @@ def preview(project_dir: str, fmt: str):
     if rules:
         # just print raw so it's easy to pipe
         click.echo(rules[0].content)
+
+
+@main.command()
+@click.argument("project_dir", default=".", type=click.Path(exists=True, file_okay=False))
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    help="Output format.",
+)
+@click.option(
+    "--min-score",
+    default=0,
+    show_default=True,
+    help="Exit with code 1 if the audit score is below this percentage.",
+)
+def audit(project_dir: str, output_format: str, min_score: int):
+    """Audit existing assistant rules for missing project guidance."""
+    report = audit_project(project_dir)
+
+    if output_format == "json":
+        click.echo(report.to_json())
+    else:
+        files = [str(path.relative_to(report.root)) for path in report.files]
+        console.print(
+            f"[bold]Rule audit:[/bold] {report.percentage}% ({report.score}/{report.max_score})"
+        )
+        console.print(f"[bold]Files:[/bold] {', '.join(files) if files else '-'}")
+        console.print()
+
+        table = Table(show_lines=True)
+        table.add_column("Check", style="bold cyan")
+        table.add_column("Weight", justify="right")
+        table.add_column("Status")
+        table.add_column("Detail")
+        for check in report.checks:
+            status = "[green]pass[/green]" if check.passed else "[red]missing[/red]"
+            table.add_row(check.name, str(check.weight), status, check.detail)
+        console.print(table)
+
+    if min_score and report.percentage < min_score:
+        raise click.ClickException(
+            f"Rule audit score {report.percentage}% is below --min-score {min_score}%."
+        )
 
 
 if __name__ == "__main__":

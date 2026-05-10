@@ -54,6 +54,12 @@ ruleforge generate . -f claude
 # 预览，不写文件
 ruleforge preview .
 
+# 审计已有规则文件是否缺关键信息
+ruleforge audit .
+
+# 在 CI 里要求规则质量至少 80 分
+ruleforge audit . --min-score 80
+
 # 覆盖已有文件
 ruleforge generate . --overwrite
 
@@ -109,6 +115,25 @@ Package manager: poetry
 | `claude` | `CLAUDE.md` | Claude Code、Claude Desktop |
 | `cursor` | `.cursorrules` | Cursor IDE |
 | `copilot` | `.github/copilot-instructions.md` | GitHub Copilot |
+
+## 规则审计
+
+RuleForge 现在也可以检查你已经写好的规则文件。它会看这些文件是否包含真实项目里最关键的几类信息：
+
+- 项目背景和技术栈
+- 明确的测试、lint、typecheck、build 命令
+- 编辑边界和 generated file 提醒
+- secret / token / `.env` 处理规则
+- git、PR、CI、review 工作流
+- 对 AI assistant 行为方式的约束
+
+```bash
+ruleforge audit .
+ruleforge audit . --format json
+ruleforge audit . --min-score 80
+```
+
+这适合放进 CI，也适合检查手写的 `AGENTS.md`、`CLAUDE.md`、`.cursorrules` 或 Copilot instructions 是否足够具体。
 
 ## Python API
 

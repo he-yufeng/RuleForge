@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -117,9 +118,7 @@ def _detect_python_details(root: Path, profile: ProjectProfile) -> None:
 
     if pyproject.exists():
         try:
-            import toml
-
-            data = toml.loads(pyproject.read_text(encoding="utf-8", errors="replace"))
+            data = _load_toml(pyproject)
         except Exception:
             data = {}
 
@@ -324,9 +323,7 @@ def _detect_rust_details(root: Path, profile: ProjectProfile) -> None:
     if not cargo.exists():
         return
     try:
-        import toml
-
-        data = toml.loads(cargo.read_text(encoding="utf-8", errors="replace"))
+        data = _load_toml(cargo)
     except Exception:
         return
     edition = data.get("package", {}).get("edition")
@@ -442,3 +439,14 @@ def analyze_project(project_dir: str | Path) -> ProjectProfile:
     _detect_existing_rules(root, profile)
 
     return profile
+
+
+def _load_toml(path: Path) -> dict[str, Any]:
+    if sys.version_info >= (3, 11):
+        import tomllib
+
+        return tomllib.loads(path.read_text(encoding="utf-8", errors="replace"))
+
+    import toml
+
+    return toml.loads(path.read_text(encoding="utf-8", errors="replace"))
