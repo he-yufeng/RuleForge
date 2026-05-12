@@ -91,6 +91,20 @@ def test_gitignore_patterns(tmp_project):
     assert "__pycache__/" in profile.git_ignore_patterns
 
 
+def test_language_count_respects_gitignore(tmp_project):
+    generated = tmp_project / "generated"
+    generated.mkdir()
+    (generated / "bundle.ts").write_text("export const value = 1;\n")
+    (tmp_project / "notes.generated.py").write_text("print('generated')\n")
+    with (tmp_project / ".gitignore").open("a", encoding="utf-8") as f:
+        f.write("generated/\n*.generated.py\n")
+
+    profile = analyze_project(tmp_project)
+
+    assert profile.languages["Python"] == 3
+    assert "TypeScript" not in profile.languages
+
+
 def test_nonexistent_dir():
     with pytest.raises(FileNotFoundError):
         analyze_project("/nonexistent/path/foo/bar")

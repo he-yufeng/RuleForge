@@ -33,6 +33,8 @@ RuleForge generates accurate, stack-aware rules in seconds by actually reading y
 | **CI Systems** | GitHub Actions, GitLab CI, CircleCI, Jenkins |
 | **Other** | Docker, Makefile, monorepo structure, entry points, .gitignore patterns |
 
+Language counts respect `.gitignore`, so generated bundles and local artifacts do not skew the detected stack.
+
 ## Installation
 
 ```bash

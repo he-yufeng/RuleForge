@@ -6,6 +6,7 @@ import os
 import re
 import sys
 from dataclasses import dataclass, field
+from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
 
@@ -95,11 +96,71 @@ def _should_skip(name: str) -> bool:
     return name in _SKIP_DIRS or name.startswith(".")
 
 
+def _read_gitignore_patterns(root: Path) -> list[str]:
+    gi = root / ".gitignore"
+    if not gi.exists():
+        return []
+    try:
+        lines = gi.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return []
+    return [line.strip() for line in lines if line.strip() and not line.lstrip().startswith("#")]
+
+
+def _matches_gitignore(rel_path: str, is_dir: bool, raw_pattern: str) -> bool:
+    pattern = raw_pattern.strip().replace("\\", "/")
+    if not pattern or pattern.startswith("!"):
+        return False
+
+    directory_only = pattern.endswith("/")
+    anchored = pattern.startswith("/")
+    pattern = pattern.strip("/")
+    if not pattern:
+        return False
+
+    if directory_only:
+        return rel_path == pattern or rel_path.startswith(pattern + "/") or (
+            not anchored and ("/" + pattern + "/") in ("/" + rel_path + "/")
+        )
+
+    if anchored or "/" in pattern:
+        return fnmatch(rel_path, pattern) or (not anchored and fnmatch(rel_path, f"*/{pattern}"))
+
+    parts = rel_path.split("/")
+    if is_dir:
+        return any(fnmatch(part, pattern) for part in parts)
+    return fnmatch(parts[-1], pattern) or any(fnmatch(part, pattern) for part in parts[:-1])
+
+
+def _is_gitignored(root: Path, path: Path, is_dir: bool, patterns: list[str]) -> bool:
+    try:
+        rel_path = path.relative_to(root).as_posix()
+    except ValueError:
+        return False
+
+    ignored = False
+    for raw in patterns:
+        negated = raw.startswith("!")
+        pattern = raw[1:] if negated else raw
+        if _matches_gitignore(rel_path, is_dir, pattern):
+            ignored = not negated
+    return ignored
+
+
 def _count_languages(root: Path) -> dict[str, int]:
     counts: dict[str, int] = {}
+    gitignore_patterns = _read_gitignore_patterns(root)
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if not _should_skip(d)]
+        current = Path(dirpath)
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if not _should_skip(d)
+            and not _is_gitignored(root, current / d, is_dir=True, patterns=gitignore_patterns)
+        ]
         for f in filenames:
+            if _is_gitignored(root, current / f, is_dir=False, patterns=gitignore_patterns):
+                continue
             ext = Path(f).suffix.lower()
             lang = _EXT_LANG.get(ext)
             if lang:
@@ -368,15 +429,7 @@ def _detect_misc(root: Path, profile: ProjectProfile) -> None:
         profile.monorepo = True
 
     # gitignore patterns (useful context for rules)
-    gi = root / ".gitignore"
-    if gi.exists():
-        try:
-            lines = gi.read_text(encoding="utf-8", errors="replace").splitlines()
-            profile.git_ignore_patterns = [
-                line.strip() for line in lines if line.strip() and not line.startswith("#")
-            ][:20]
-        except OSError:
-            pass
+    profile.git_ignore_patterns = _read_gitignore_patterns(root)[:20]
 
     # source directory detection
     common_src = ["src", "lib", "app", "pkg", "cmd", "internal"]
