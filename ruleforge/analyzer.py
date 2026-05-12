@@ -119,8 +119,10 @@ def _matches_gitignore(rel_path: str, is_dir: bool, raw_pattern: str) -> bool:
         return False
 
     if directory_only:
-        return rel_path == pattern or rel_path.startswith(pattern + "/") or (
-            not anchored and ("/" + pattern + "/") in ("/" + rel_path + "/")
+        return (
+            rel_path == pattern
+            or rel_path.startswith(pattern + "/")
+            or (not anchored and ("/" + pattern + "/") in ("/" + rel_path + "/"))
         )
 
     if anchored or "/" in pattern:
