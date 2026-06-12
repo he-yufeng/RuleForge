@@ -65,6 +65,17 @@ def test_claude_content(py_project):
     assert "Docker" in content
 
 
+def test_generated_rules_reference_existing_rule_files(py_project):
+    (py_project / "AGENTS.md").write_text("Repo rules\n", encoding="utf-8")
+    profile = analyze_project(py_project)
+    rules = generate_rules(profile, ["claude"])
+
+    content = rules[0].content
+    assert "Existing Assistant Rules" in content
+    assert "`AGENTS.md`" in content
+    assert "preserve stricter local instructions" in content
+
+
 def test_cursor_has_rules_prefix(py_project):
     profile = analyze_project(py_project)
     rules = generate_rules(profile, ["cursor"])

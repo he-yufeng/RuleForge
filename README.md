@@ -135,7 +135,7 @@ ruleforge audit . --format json
 ruleforge audit . --min-score 80
 ```
 
-This is useful for CI or for checking whether a hand-written `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, or Copilot instructions file is specific enough to trust.
+This is useful for CI or for checking whether a hand-written `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, or Copilot instructions file is specific enough to trust. When RuleForge generates new rules, it now also points out existing assistant rule files so the generated draft does not accidentally replace stricter local guidance.
 
 ## Python API
 

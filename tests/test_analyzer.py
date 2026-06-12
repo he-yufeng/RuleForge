@@ -86,6 +86,15 @@ def test_detect_source_dirs(tmp_project):
     assert "src" in profile.source_dirs
 
 
+def test_detect_existing_assistant_rules(tmp_project):
+    (tmp_project / "AGENTS.md").write_text("Local rules\n", encoding="utf-8")
+    (tmp_project / "GEMINI.md").write_text("Gemini rules\n", encoding="utf-8")
+
+    profile = analyze_project(tmp_project)
+
+    assert profile.extra["existing_rules"] == ["AGENTS.md", "GEMINI.md"]
+
+
 def test_gitignore_patterns(tmp_project):
     profile = analyze_project(tmp_project)
     assert "__pycache__/" in profile.git_ignore_patterns

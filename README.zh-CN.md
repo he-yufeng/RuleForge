@@ -133,7 +133,7 @@ ruleforge audit . --format json
 ruleforge audit . --min-score 80
 ```
 
-这适合放进 CI，也适合检查手写的 `AGENTS.md`、`CLAUDE.md`、`.cursorrules` 或 Copilot instructions 是否足够具体。
+这适合放进 CI，也适合检查手写的 `AGENTS.md`、`CLAUDE.md`、`.cursorrules` 或 Copilot instructions 是否足够具体。RuleForge 生成新规则时也会标出项目里已有的 assistant 规则文件，避免生成稿无意覆盖更严格的本地约束。
 
 ## Python API
 

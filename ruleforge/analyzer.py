@@ -448,7 +448,9 @@ def _detect_misc(root: Path, profile: ProjectProfile) -> None:
 def _detect_existing_rules(root: Path, profile: ProjectProfile) -> None:
     """Check if there are already AI assistant rule files."""
     rule_files = [
+        "AGENTS.md",
         "CLAUDE.md",
+        "GEMINI.md",
         ".cursorrules",
         ".cursor/rules",
         ".github/copilot-instructions.md",

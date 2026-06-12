@@ -84,6 +84,23 @@ def _build_conventions_section(profile: ProjectProfile) -> str:
     return "\n".join(lines)
 
 
+def _build_existing_rules_section(profile: ProjectProfile) -> str:
+    existing = profile.extra.get("existing_rules") or []
+    if not existing:
+        return ""
+
+    files = ", ".join(f"`{path}`" for path in existing)
+    return "\n".join(
+        [
+            "## Existing Assistant Rules",
+            "",
+            f"Existing rule files: {files}",
+            "- Read these files before making changes; preserve stricter local instructions.",
+            "",
+        ]
+    )
+
+
 def _build_guidelines(profile: ProjectProfile) -> str:
     """Context-aware coding guidelines based on detected stack."""
     lines = ["## Guidelines", ""]
@@ -157,6 +174,7 @@ def _generate_claude_md(profile: ProjectProfile) -> str:
         _build_header(profile),
         _build_structure_section(profile),
         _build_conventions_section(profile),
+        _build_existing_rules_section(profile),
         _build_guidelines(profile),
         _build_dont_section(profile),
     ]
