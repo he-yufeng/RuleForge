@@ -84,6 +84,34 @@ def _build_conventions_section(profile: ProjectProfile) -> str:
     return "\n".join(lines)
 
 
+def _build_project_commands_section(profile: ProjectProfile) -> str:
+    package_scripts = profile.extra.get("package_scripts") or {}
+    python_entry_points = profile.extra.get("python_entry_points") or {}
+    if not package_scripts and not python_entry_points:
+        return ""
+
+    lines = ["## Project Commands", ""]
+
+    if package_scripts:
+        runner = {
+            "npm": "npm run",
+            "pnpm": "pnpm",
+            "yarn": "yarn",
+            "bun": "bun run",
+        }.get(profile.package_manager or "npm", "npm run")
+        for name, command in package_scripts.items():
+            lines.append(f"- `{runner} {name}`: `{command}`")
+
+    if python_entry_points:
+        lines.append("")
+        lines.append("CLI entry points:")
+        for name, target in python_entry_points.items():
+            lines.append(f"- `{name}` -> `{target}`")
+
+    lines.append("")
+    return "\n".join(lines)
+
+
 def _build_existing_rules_section(profile: ProjectProfile) -> str:
     existing = profile.extra.get("existing_rules") or []
     if not existing:
@@ -174,6 +202,7 @@ def _generate_claude_md(profile: ProjectProfile) -> str:
         _build_header(profile),
         _build_structure_section(profile),
         _build_conventions_section(profile),
+        _build_project_commands_section(profile),
         _build_existing_rules_section(profile),
         _build_guidelines(profile),
         _build_dont_section(profile),

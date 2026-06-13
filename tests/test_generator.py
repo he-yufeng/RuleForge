@@ -22,6 +22,9 @@ def py_project(tmp_path):
         requires-python = ">=3.10"
         dependencies = ["flask", "sqlalchemy"]
 
+        [project.scripts]
+        myapp = "myapp.cli:main"
+
         [tool.ruff]
         target-version = "py310"
 
@@ -74,6 +77,24 @@ def test_generated_rules_reference_existing_rule_files(py_project):
     assert "Existing Assistant Rules" in content
     assert "`AGENTS.md`" in content
     assert "preserve stricter local instructions" in content
+
+
+def test_generated_rules_include_project_commands(py_project):
+    (py_project / "package.json").write_text(
+        '{"scripts": {"test": "vitest run", "lint": "eslint .", "dev": "vite"}}',
+        encoding="utf-8",
+    )
+    (py_project / "package-lock.json").write_text("{}", encoding="utf-8")
+    (py_project / "src" / "app.ts").write_text("export const answer = 42;\n", encoding="utf-8")
+
+    profile = analyze_project(py_project)
+    rules = generate_rules(profile, ["claude"])
+
+    content = rules[0].content
+    assert "Project Commands" in content
+    assert "`npm run test`: `vitest run`" in content
+    assert "`npm run lint`: `eslint .`" in content
+    assert "`myapp` -> `myapp.cli:main`" in content
 
 
 def test_cursor_has_rules_prefix(py_project):

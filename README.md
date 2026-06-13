@@ -31,6 +31,7 @@ RuleForge generates accurate, stack-aware rules in seconds by actually reading y
 | **Linters & Formatters** | ruff, black, eslint, prettier, biome, clippy, go fmt |
 | **Test Frameworks** | pytest, unittest, vitest, jest, mocha |
 | **CI Systems** | GitHub Actions, GitLab CI, CircleCI, Jenkins |
+| **Project Commands** | package scripts such as `test`, `lint`, `build`, `typecheck`, plus Python CLI entry points |
 | **Other** | Docker, Makefile, monorepo structure, entry points, .gitignore patterns |
 
 Language counts respect `.gitignore`, so generated bundles and local artifacts do not skew the detected stack.
@@ -92,6 +93,11 @@ Package manager: poetry
 - Testing: pytest
 - Python: >=3.11
 - CI: GitHub Actions
+
+## Project Commands
+
+- `npm run test`: `vitest run`
+- `npm run lint`: `eslint .`
 
 ## Guidelines
 

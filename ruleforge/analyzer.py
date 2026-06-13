@@ -220,6 +220,10 @@ def _detect_python_details(root: Path, profile: ProjectProfile) -> None:
         deps = data.get("project", {}).get("dependencies", [])
         profile.dependencies.extend(deps[:30])
 
+        scripts = data.get("project", {}).get("scripts", {})
+        if scripts:
+            profile.extra["python_entry_points"] = dict(list(scripts.items())[:20])
+
     elif poetry_lock.exists():
         profile.package_manager = "poetry"
     elif pipfile.exists():
@@ -352,8 +356,15 @@ def _detect_node_details(root: Path, profile: ProjectProfile) -> None:
         if key in all_deps and name not in profile.frameworks:
             profile.frameworks.append(name)
 
-    # scripts hint at conventions
+    # scripts hint at conventions and are useful concrete commands for generated rules
     scripts = data.get("scripts", {})
+    if scripts:
+        profile.extra["package_scripts"] = {
+            name: command
+            for name, command in scripts.items()
+            if name in {"dev", "build", "test", "lint", "format", "typecheck", "check"}
+            or name.startswith(("test:", "lint:", "check:"))
+        }
     if "lint" in scripts:
         profile.conventions.append(f"lint script: `{scripts['lint']}`")
     if "test" in scripts:

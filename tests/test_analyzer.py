@@ -150,3 +150,7 @@ def test_detect_node(node_project):
     assert profile.formatter == "prettier"
     assert "Next.js" in profile.frameworks
     assert "React" in profile.frameworks
+    assert profile.extra["package_scripts"] == {
+        "lint": "eslint .",
+        "test": "vitest",
+    }
