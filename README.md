@@ -31,7 +31,7 @@ RuleForge generates accurate, stack-aware rules in seconds by actually reading y
 | **Linters & Formatters** | ruff, black, eslint, prettier, biome, clippy, go fmt |
 | **Test Frameworks** | pytest, unittest, vitest, jest, mocha |
 | **CI Systems** | GitHub Actions, GitLab CI, CircleCI, Jenkins |
-| **Project Commands** | package scripts such as `test`, `lint`, `build`, `typecheck`, plus Python CLI entry points |
+| **Project Commands** | package scripts, Python CLI entry points, and the real verification commands used by GitHub Actions |
 | **Other** | Docker, Makefile, monorepo structure, entry points, .gitignore patterns |
 
 Language counts respect `.gitignore`, so generated bundles and local artifacts do not skew the detected stack.
@@ -130,6 +130,7 @@ RuleForge can also check rule files you already wrote. It looks for the parts th
 
 - project context and detected stack
 - concrete test, lint, typecheck, or build commands
+- verification commands extracted from GitHub Actions `run` steps (secret-bearing lines are skipped)
 - editing boundaries and generated-file warnings
 - secret / token / `.env` handling
 - git, PR, CI, and review workflow

@@ -87,7 +87,8 @@ def _build_conventions_section(profile: ProjectProfile) -> str:
 def _build_project_commands_section(profile: ProjectProfile) -> str:
     package_scripts = profile.extra.get("package_scripts") or {}
     python_entry_points = profile.extra.get("python_entry_points") or {}
-    if not package_scripts and not python_entry_points:
+    ci_commands = profile.extra.get("ci_commands") or []
+    if not package_scripts and not python_entry_points and not ci_commands:
         return ""
 
     lines = ["## Project Commands", ""]
@@ -107,6 +108,12 @@ def _build_project_commands_section(profile: ProjectProfile) -> str:
         lines.append("CLI entry points:")
         for name, target in python_entry_points.items():
             lines.append(f"- `{name}` -> `{target}`")
+
+    if ci_commands:
+        lines.append("")
+        lines.append("Commands observed in CI:")
+        for command in ci_commands:
+            lines.append(f"- `{command}`")
 
     lines.append("")
     return "\n".join(lines)

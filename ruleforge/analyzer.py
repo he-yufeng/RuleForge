@@ -10,6 +10,8 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 
 @dataclass
 class ProjectProfile:
@@ -418,6 +420,7 @@ def _detect_ci(root: Path, profile: ProjectProfile) -> None:
     if (root / ".github" / "workflows").is_dir():
         profile.has_ci = True
         profile.ci_system = "GitHub Actions"
+        profile.extra["ci_commands"] = _detect_github_actions_commands(root)
     elif (root / ".gitlab-ci.yml").exists():
         profile.has_ci = True
         profile.ci_system = "GitLab CI"
@@ -427,6 +430,35 @@ def _detect_ci(root: Path, profile: ProjectProfile) -> None:
     elif (root / "Jenkinsfile").exists():
         profile.has_ci = True
         profile.ci_system = "Jenkins"
+
+
+def _detect_github_actions_commands(root: Path) -> list[str]:
+    commands: list[str] = []
+    workflows = root / ".github" / "workflows"
+    for path in sorted([*workflows.glob("*.yml"), *workflows.glob("*.yaml")]):
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8", errors="replace")) or {}
+        except (OSError, yaml.YAMLError):
+            continue
+        for job in (data.get("jobs") or {}).values():
+            for step in job.get("steps") or []:
+                run = step.get("run") if isinstance(step, dict) else None
+                if not isinstance(run, str):
+                    continue
+                for line in run.splitlines():
+                    command = line.strip()
+                    if (
+                        not command
+                        or command.startswith("#")
+                        or "${{ secrets." in command
+                        or command in {"set -e", "set -eux", "set -euo pipefail"}
+                    ):
+                        continue
+                    if len(command) <= 200 and command not in commands:
+                        commands.append(command)
+                    if len(commands) >= 20:
+                        return commands
+    return commands
 
 
 def _detect_misc(root: Path, profile: ProjectProfile) -> None:

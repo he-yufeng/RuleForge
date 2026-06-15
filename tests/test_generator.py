@@ -97,6 +97,19 @@ def test_generated_rules_include_project_commands(py_project):
     assert "`myapp` -> `myapp.cli:main`" in content
 
 
+def test_generated_rules_include_ci_commands(py_project):
+    (py_project / ".github" / "workflows" / "ci.yml").write_text(
+        "jobs:\n  test:\n    steps:\n      - run: pytest -q\n",
+        encoding="utf-8",
+    )
+
+    profile = analyze_project(py_project)
+    content = generate_rules(profile, ["claude"])[0].content
+
+    assert "Commands observed in CI" in content
+    assert "`pytest -q`" in content
+
+
 def test_cursor_has_rules_prefix(py_project):
     profile = analyze_project(py_project)
     rules = generate_rules(profile, ["cursor"])

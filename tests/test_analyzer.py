@@ -81,6 +81,28 @@ def test_detect_ci(tmp_project):
     assert profile.ci_system == "GitHub Actions"
 
 
+def test_detect_ci_commands(tmp_project):
+    workflow = tmp_project / ".github" / "workflows" / "ci.yml"
+    workflow.write_text(
+        textwrap.dedent("""\
+        name: CI
+        jobs:
+          test:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  ruff check .
+                  pytest -q
+              - run: echo "${{ secrets.DEPLOY_TOKEN }}"
+        """),
+        encoding="utf-8",
+    )
+
+    profile = analyze_project(tmp_project)
+
+    assert profile.extra["ci_commands"] == ["ruff check .", "pytest -q"]
+
+
 def test_detect_source_dirs(tmp_project):
     profile = analyze_project(tmp_project)
     assert "src" in profile.source_dirs
