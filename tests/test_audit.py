@@ -79,3 +79,33 @@ def test_audit_json_cli(tmp_path):
     data = json.loads(result.output)
     assert data["score"] <= data["max_score"]
     assert data["files"] == ["AGENTS.md"]
+
+
+def test_audit_sarif_reports_only_missing_checks(tmp_path):
+    (tmp_path / "AGENTS.md").write_text(
+        "Project rules. Run tests. Never commit secrets.\n",
+        encoding="utf-8",
+    )
+
+    report = audit_project(tmp_path)
+    data = json.loads(report.to_sarif())
+    run = data["runs"][0]
+
+    assert data["version"] == "2.1.0"
+    assert run["tool"]["driver"]["name"] == "RuleForge"
+    assert len(run["results"]) == len(report.missing)
+    assert {result["ruleId"] for result in run["results"]} == {
+        rule["id"]
+        for rule, check in zip(run["tool"]["driver"]["rules"], report.checks)
+        if not check.passed
+    }
+    assert all(result["locations"][0]["physicalLocation"]["artifactLocation"]["uri"] == "AGENTS.md"
+               for result in run["results"])
+
+
+def test_audit_sarif_cli(tmp_path):
+    result = CliRunner().invoke(main, ["audit", str(tmp_path), "--format", "sarif"])
+
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["runs"][0]["results"]

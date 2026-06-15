@@ -139,10 +139,11 @@ RuleForge can also check rule files you already wrote. It looks for the parts th
 ```bash
 ruleforge audit .
 ruleforge audit . --format json
+ruleforge audit . --format sarif > ruleforge.sarif
 ruleforge audit . --min-score 80
 ```
 
-This is useful for CI or for checking whether a hand-written `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, or Copilot instructions file is specific enough to trust. When RuleForge generates new rules, it now also points out existing assistant rule files so the generated draft does not accidentally replace stricter local guidance.
+This is useful for CI or for checking whether a hand-written `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, or Copilot instructions file is specific enough to trust. SARIF output turns missing guidance into GitHub Code Scanning findings. When RuleForge generates new rules, it now also points out existing assistant rule files so the generated draft does not accidentally replace stricter local guidance.
 
 ## Python API
 

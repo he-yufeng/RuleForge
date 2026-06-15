@@ -77,6 +77,62 @@ class RuleAuditReport:
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), ensure_ascii=False, indent=2)
 
+    def to_sarif(self) -> str:
+        """Serialize missing guidance as SARIF results for code scanning."""
+        location = self.files[0] if self.files else self.root / "AGENTS.md"
+        try:
+            uri = location.relative_to(self.root).as_posix()
+        except ValueError:
+            uri = location.as_posix()
+
+        rules = []
+        results = []
+        for index, check in enumerate(self.checks):
+            rule_id = re.sub(r"[^a-z0-9]+", "-", check.name.lower()).strip("-")
+            rules.append(
+                {
+                    "id": rule_id,
+                    "name": check.name,
+                    "shortDescription": {"text": check.detail},
+                    "properties": {"weight": check.weight},
+                }
+            )
+            if not check.passed:
+                results.append(
+                    {
+                        "ruleId": rule_id,
+                        "ruleIndex": index,
+                        "level": "warning",
+                        "message": {"text": check.detail},
+                        "locations": [
+                            {
+                                "physicalLocation": {
+                                    "artifactLocation": {"uri": uri},
+                                    "region": {"startLine": 1},
+                                }
+                            }
+                        ],
+                    }
+                )
+
+        payload = {
+            "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+            "version": "2.1.0",
+            "runs": [
+                {
+                    "tool": {
+                        "driver": {
+                            "name": "RuleForge",
+                            "informationUri": "https://github.com/he-yufeng/RuleForge",
+                            "rules": rules,
+                        }
+                    },
+                    "results": results,
+                }
+            ],
+        }
+        return json.dumps(payload, ensure_ascii=False, indent=2)
+
 
 def audit_project(project_dir: str | Path) -> RuleAuditReport:
     """Audit AI assistant rules for a project."""

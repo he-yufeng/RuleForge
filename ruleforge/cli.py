@@ -153,7 +153,7 @@ def preview(project_dir: str, fmt: str):
 @click.option(
     "--format",
     "output_format",
-    type=click.Choice(["table", "json"]),
+    type=click.Choice(["table", "json", "sarif"]),
     default="table",
     help="Output format.",
 )
@@ -169,6 +169,8 @@ def audit(project_dir: str, output_format: str, min_score: int):
 
     if output_format == "json":
         click.echo(report.to_json())
+    elif output_format == "sarif":
+        click.echo(report.to_sarif())
     else:
         files = [str(path.relative_to(report.root)) for path in report.files]
         console.print(
