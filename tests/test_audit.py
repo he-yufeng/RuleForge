@@ -99,8 +99,10 @@ def test_audit_sarif_reports_only_missing_checks(tmp_path):
         for rule, check in zip(run["tool"]["driver"]["rules"], report.checks)
         if not check.passed
     }
-    assert all(result["locations"][0]["physicalLocation"]["artifactLocation"]["uri"] == "AGENTS.md"
-               for result in run["results"])
+    assert all(
+        result["locations"][0]["physicalLocation"]["artifactLocation"]["uri"] == "AGENTS.md"
+        for result in run["results"]
+    )
 
 
 def test_audit_sarif_cli(tmp_path):
