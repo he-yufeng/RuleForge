@@ -145,3 +145,36 @@ def test_write_rules_no_overwrite(py_project):
     (py_project / "CLAUDE.md").write_text("custom stuff")
     write_rules(rules, py_project, overwrite=False)
     assert (py_project / "CLAUDE.md").read_text() == "custom stuff"
+
+
+def test_generate_new_assistant_formats(py_project):
+    profile = analyze_project(py_project)
+    rules = generate_rules(profile, ["agents", "windsurf", "cline"])
+    by_format = {r.format: r.filename for r in rules}
+    assert by_format == {
+        "agents": "AGENTS.md",
+        "windsurf": ".windsurfrules",
+        "cline": ".clinerules",
+    }
+
+
+def test_new_formats_carry_detected_stack(py_project):
+    profile = analyze_project(py_project)
+    for rule in generate_rules(profile, ["agents", "windsurf", "cline"]):
+        assert "Flask" in rule.content
+        assert "pytest" in rule.content.lower()
+
+
+def test_agents_md_matches_neutral_document(py_project):
+    profile = analyze_project(py_project)
+    agents = generate_rules(profile, ["agents"])[0].content
+    claude = generate_rules(profile, ["claude"])[0].content
+    # AGENTS.md is the canonical tool-agnostic document.
+    assert agents == claude
+
+
+def test_windsurf_and_cline_use_rules_header(py_project):
+    profile = analyze_project(py_project)
+    rules = {r.format: r.content for r in generate_rules(profile, ["windsurf", "cline"])}
+    assert rules["windsurf"].startswith("# Rules for ")
+    assert rules["cline"].startswith("# Rules for ")

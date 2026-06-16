@@ -8,7 +8,7 @@ from typing import Literal
 
 from ruleforge.analyzer import ProjectProfile
 
-RuleFormat = Literal["claude", "cursor", "copilot"]
+RuleFormat = Literal["claude", "cursor", "copilot", "agents", "windsurf", "cline"]
 
 
 @dataclass
@@ -235,6 +235,29 @@ def _generate_copilot_instructions(profile: ProjectProfile) -> str:
     return content
 
 
+def _generate_agents_md(profile: ProjectProfile) -> str:
+    """Generate AGENTS.md format.
+
+    AGENTS.md is the tool-agnostic convention a growing number of agents and
+    editors read, so the canonical project-named document is used as-is.
+    """
+    return _generate_claude_md(profile)
+
+
+def _generate_windsurfrules(profile: ProjectProfile) -> str:
+    """Generate .windsurfrules format (Windsurf / Codeium)."""
+    content = _generate_claude_md(profile)
+    name = profile.root.name
+    return content.replace(f"# {name}", f"# Rules for {name}", 1)
+
+
+def _generate_clinerules(profile: ProjectProfile) -> str:
+    """Generate .clinerules format (Cline)."""
+    content = _generate_claude_md(profile)
+    name = profile.root.name
+    return content.replace(f"# {name}", f"# Rules for {name}", 1)
+
+
 def generate_rules(
     profile: ProjectProfile,
     formats: list[RuleFormat] | None = None,
@@ -257,6 +280,9 @@ def generate_rules(
         "claude": ("CLAUDE.md", _generate_claude_md),
         "cursor": (".cursorrules", _generate_cursorrules),
         "copilot": (".github/copilot-instructions.md", _generate_copilot_instructions),
+        "agents": ("AGENTS.md", _generate_agents_md),
+        "windsurf": (".windsurfrules", _generate_windsurfrules),
+        "cline": (".clinerules", _generate_clinerules),
     }
 
     for fmt in formats:
