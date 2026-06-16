@@ -63,6 +63,9 @@ ruleforge audit .
 # Fail CI if the rules are too thin
 ruleforge audit . --min-score 80
 
+# Lint existing rules for placeholders, conflicts, and stale advice
+ruleforge lint .
+
 # Overwrite existing files
 ruleforge generate . --overwrite
 
@@ -144,6 +147,22 @@ ruleforge audit . --min-score 80
 ```
 
 This is useful for CI or for checking whether a hand-written `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, or Copilot instructions file is specific enough to trust. SARIF output turns missing guidance into GitHub Code Scanning findings. When RuleForge generates new rules, it now also points out existing assistant rule files so the generated draft does not accidentally replace stricter local guidance.
+
+## Rule Lint
+
+Where `audit` measures how much a rule file covers, `lint` looks for guidance that is wrong or unusable, the kind of thing that quietly sends an agent down the wrong path:
+
+- leftover template placeholders (`TODO`, `FIXME`, `{{ ... }}`, `<your project name>`)
+- conflicting directives, like recommending both `npm` and `pnpm`, or `pytest` and `unittest`
+- stale advice, like telling the agent to use `yarn` when the repo has a `pnpm-lock.yaml`
+
+```bash
+ruleforge lint .
+ruleforge lint . --format json
+ruleforge lint . --strict   # treat warnings as errors too
+```
+
+Placeholders are reported as errors and competing or stale tool directives as warnings. The command exits non-zero when there are errors (or any warning under `--strict`), so it drops straight into a CI step. Stale and conflict checks only compare tools within the same ecosystem, so a polyglot repo that genuinely runs both `pytest` and `jest` is left alone.
 
 ## Python API
 

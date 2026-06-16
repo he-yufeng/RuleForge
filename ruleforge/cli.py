@@ -12,6 +12,7 @@ from rich.table import Table
 from ruleforge.analyzer import analyze_project
 from ruleforge.audit import audit_project
 from ruleforge.generator import RuleFormat, generate_rules, write_rules
+from ruleforge.lint import lint_rules
 
 console = Console()
 
@@ -193,6 +194,53 @@ def audit(project_dir: str, output_format: str, min_score: int):
         raise click.ClickException(
             f"Rule audit score {report.percentage}% is below --min-score {min_score}%."
         )
+
+
+@main.command()
+@click.argument("project_dir", default=".", type=click.Path(exists=True, file_okay=False))
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    help="Output format.",
+)
+@click.option(
+    "--strict",
+    is_flag=True,
+    help="Treat warnings as errors when setting the exit code.",
+)
+def lint(project_dir: str, output_format: str, strict: bool):
+    """Lint existing assistant rules for placeholders, conflicts, and stale advice."""
+    report = lint_rules(project_dir)
+
+    if output_format == "json":
+        click.echo(report.to_json())
+    else:
+        files = [path.name for path in report.files]
+        console.print(f"[bold]Rule lint:[/bold] {', '.join(files) if files else 'no rule files'}")
+        if not report.findings:
+            console.print("[green]No problems found.[/green]")
+        else:
+            table = Table(show_lines=True)
+            table.add_column("Severity")
+            table.add_column("Rule", style="bold cyan")
+            table.add_column("Message")
+            for finding in report.findings:
+                color = "red" if finding.severity == "error" else "yellow"
+                table.add_row(
+                    f"[{color}]{finding.severity}[/{color}]",
+                    finding.rule_id,
+                    finding.message,
+                )
+            console.print(table)
+        console.print(
+            f"\n[dim]{len(report.errors)} error(s), {len(report.warnings)} warning(s)[/dim]"
+        )
+
+    failed = report.errors or (strict and report.warnings)
+    if failed:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
