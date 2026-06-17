@@ -15,6 +15,8 @@ RULE_FILE_NAMES = (
     "CLAUDE.md",
     ".cursorrules",
     ".github/copilot-instructions.md",
+    ".windsurfrules",
+    ".clinerules",
 )
 
 

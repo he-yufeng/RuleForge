@@ -34,6 +34,14 @@ def test_lint_clean_rules_have_no_findings(tmp_path):
     assert report.errors == []
 
 
+def test_lint_reads_cline_rules_file(tmp_path):
+    # .clinerules is a generated format, so lint must discover and read it
+    _write_pyproject(tmp_path)
+    (tmp_path / ".clinerules").write_text("# sample\n\nPython project. Run pytest and ruff.\n")
+    report = lint_rules(tmp_path)
+    assert any(p.name == ".clinerules" for p in report.files)
+
+
 def test_lint_flags_placeholder_with_line_number(tmp_path):
     (tmp_path / "AGENTS.md").write_text(
         textwrap.dedent(

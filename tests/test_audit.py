@@ -3,8 +3,25 @@ import textwrap
 
 from click.testing import CliRunner
 
-from ruleforge.audit import audit_project
+from ruleforge.audit import audit_project, find_rule_files
 from ruleforge.cli import main
+
+
+def test_find_rule_files_discovers_windsurf_and_cline(tmp_path):
+    # RuleForge generates these two formats, so discovery must recognize them too
+    (tmp_path / ".windsurfrules").write_text("# Windsurf rules\n")
+    (tmp_path / ".clinerules").write_text("# Cline rules\n")
+    found = {p.path.name for p in find_rule_files(tmp_path)}
+    assert ".windsurfrules" in found
+    assert ".clinerules" in found
+
+
+def test_audit_recognizes_a_windsurf_only_project(tmp_path):
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "s"\nversion = "0.1.0"\n')
+    (tmp_path / ".windsurfrules").write_text("# rules for the assistant\n")
+    report = audit_project(tmp_path)
+    assert any(f.name == ".windsurfrules" for f in report.files)
+    assert any(check.name == "Rule file exists" and check.passed for check in report.checks)
 
 
 def test_audit_reports_missing_rule_file(tmp_path):
