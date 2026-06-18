@@ -252,3 +252,28 @@ def test_lint_strict_treats_warnings_as_errors(tmp_path):
 
     strict = runner.invoke(main, ["lint", str(tmp_path), "--strict"])
     assert strict.exit_code == 1
+
+
+def test_lint_flags_framework_from_wrong_stack(tmp_path):
+    # repo uses Flask; rules that still talk about Django are stale
+    _write_pyproject(tmp_path, extra='dependencies = ["flask>=2.0"]')
+    (tmp_path / "app.py").write_text("import flask\n\napp = flask.Flask(__name__)\n")
+    (tmp_path / "AGENTS.md").write_text(
+        "# sample\n\nBuild the Django models, then run pytest and ruff.\n"
+    )
+    report = lint_rules(tmp_path)
+    stale = [f for f in report.findings if f.rule_id == "framework-stale"]
+    assert len(stale) == 1
+    assert "django" in stale[0].message.lower()
+    assert "Flask" in stale[0].message
+
+
+def test_lint_does_not_flag_framework_in_use(tmp_path):
+    # rules mention the same framework the repo actually uses -> no false positive
+    _write_pyproject(tmp_path, extra='dependencies = ["flask>=2.0"]')
+    (tmp_path / "app.py").write_text("import flask\n\napp = flask.Flask(__name__)\n")
+    (tmp_path / "AGENTS.md").write_text(
+        "# sample\n\nFlask app. Run pytest and ruff before committing.\n"
+    )
+    report = lint_rules(tmp_path)
+    assert [f for f in report.findings if f.rule_id == "framework-stale"] == []

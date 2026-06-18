@@ -43,6 +43,15 @@ _FORMATTER_GROUPS: tuple[tuple[str, ...], ...] = (
     ("black", "ruff", "autopep8", "yapf"),
     ("prettier", "biome"),
 )
+# Frameworks that compete within one category — a project picks one web or one
+# core frontend framework, so rules naming a different one in the same category
+# point the assistant at a stack the repo does not use. Meta-frameworks layered
+# on top (Next.js, SvelteKit, Express) are intentionally excluded: they coexist
+# with their base framework, so flagging them would be a false positive.
+_FRAMEWORK_GROUPS: tuple[tuple[str, ...], ...] = (
+    ("django", "flask", "fastapi"),
+    ("react", "vue", "svelte", "angular"),
+)
 
 # Placeholder markers that mean a template was never filled in.
 _PLACEHOLDER_WORDS = re.compile(r"\b(TODO|FIXME|XXX|HACK|TBD)\b")
@@ -147,6 +156,14 @@ def lint_rules(project_dir: str | Path) -> RuleLintReport:
             lowered=lowered,
         )
     )
+    findings.extend(
+        _check_framework_groups(
+            rule_id="framework",
+            groups=_FRAMEWORK_GROUPS,
+            detected=profile.frameworks,
+            lowered=lowered,
+        )
+    )
 
     return RuleLintReport(
         root=profile.root,
@@ -228,6 +245,40 @@ def _check_tool_groups(
                     )
                 )
 
+    return findings
+
+
+def _check_framework_groups(
+    rule_id: str,
+    groups: tuple[tuple[str, ...], ...],
+    detected: list[str],
+    lowered: str,
+) -> list[LintFinding]:
+    """Flag rules that name a framework the repo does not use.
+
+    Unlike the single-tool checks, a project can legitimately use several
+    frameworks (a frontend plus a backend), so we only flag within a group of
+    mutually-exclusive frameworks: if the repo uses one from the group and the
+    rules mention a *different* one from the same group, that mention is stale.
+    """
+    findings: list[LintFinding] = []
+    for group in groups:
+        present = [fw for fw in detected if fw.lower() in group]
+        if not present:
+            continue  # repo uses nothing from this category -> nothing to compare
+        present_lower = {fw.lower() for fw in present}
+        stale = [fw for fw in group if fw not in present_lower and _mentions_word(lowered, fw)]
+        if stale:
+            findings.append(
+                LintFinding(
+                    rule_id=f"{rule_id}-stale",
+                    severity=SEVERITY_WARNING,
+                    message=(
+                        f"Rules mention the framework {', '.join(stale)}, but this repo "
+                        f"uses {', '.join(present)}. Update the rules to match the detected stack."
+                    ),
+                )
+            )
     return findings
 
 
