@@ -30,6 +30,19 @@ _TEST_FRAMEWORK_GROUPS: tuple[tuple[str, ...], ...] = (
     ("pytest", "unittest", "nose"),
     ("jest", "vitest", "mocha", "jasmine", "ava"),
 )
+# Linters that compete within one language ecosystem: a project standardizes on
+# one, so rules that still name the old one after a switch (e.g. flake8 -> ruff)
+# point the assistant at a tool the repo no longer runs.
+_LINTER_GROUPS: tuple[tuple[str, ...], ...] = (
+    ("ruff", "flake8", "pylint", "pycodestyle"),
+    ("eslint", "biome"),
+)
+# Formatters that compete within one ecosystem. ``ruff`` and ``biome`` appear in
+# both their linter and formatter groups because each tool fills both roles.
+_FORMATTER_GROUPS: tuple[tuple[str, ...], ...] = (
+    ("black", "ruff", "autopep8", "yapf"),
+    ("prettier", "biome"),
+)
 
 # Placeholder markers that mean a template was never filled in.
 _PLACEHOLDER_WORDS = re.compile(r"\b(TODO|FIXME|XXX|HACK|TBD)\b")
@@ -113,6 +126,24 @@ def lint_rules(project_dir: str | Path) -> RuleLintReport:
             rule_id="test-framework",
             groups=_TEST_FRAMEWORK_GROUPS,
             detected=profile.test_framework,
+            lowered=lowered,
+        )
+    )
+    findings.extend(
+        _check_tool_groups(
+            category="linter",
+            rule_id="linter",
+            groups=_LINTER_GROUPS,
+            detected=profile.linter,
+            lowered=lowered,
+        )
+    )
+    findings.extend(
+        _check_tool_groups(
+            category="formatter",
+            rule_id="formatter",
+            groups=_FORMATTER_GROUPS,
+            detected=profile.formatter,
             lowered=lowered,
         )
     )

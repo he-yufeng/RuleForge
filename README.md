@@ -158,8 +158,8 @@ This is useful for CI or for checking whether a hand-written `AGENTS.md`, `CLAUD
 Where `audit` measures how much a rule file covers, `lint` looks for guidance that is wrong or unusable, the kind of thing that quietly sends an agent down the wrong path:
 
 - leftover template placeholders (`TODO`, `FIXME`, `{{ ... }}`, `<your project name>`)
-- conflicting directives, like recommending both `npm` and `pnpm`, or `pytest` and `unittest`
-- stale advice, like telling the agent to use `yarn` when the repo has a `pnpm-lock.yaml`
+- conflicting directives, like recommending both `npm` and `pnpm`, `pytest` and `unittest`, or `black` and `ruff`
+- stale advice, like telling the agent to use `yarn` when the repo has a `pnpm-lock.yaml`, or to format with `black` when the project has switched to `ruff`
 
 ```bash
 ruleforge lint .
@@ -167,7 +167,7 @@ ruleforge lint . --format json
 ruleforge lint . --strict   # treat warnings as errors too
 ```
 
-Placeholders are reported as errors and competing or stale tool directives as warnings. The command exits non-zero when there are errors (or any warning under `--strict`), so it drops straight into a CI step. Stale and conflict checks only compare tools within the same ecosystem, so a polyglot repo that genuinely runs both `pytest` and `jest` is left alone.
+Placeholders are reported as errors and competing or stale tool directives as warnings. Conflict and staleness checks cover package managers, test frameworks, linters, and formatters. The command exits non-zero when there are errors (or any warning under `--strict`), so it drops straight into a CI step. Stale and conflict checks only compare tools within the same ecosystem, so a polyglot repo that genuinely runs both `pytest` and `jest`, or `ruff` and `eslint`, is left alone.
 
 ## Python API
 

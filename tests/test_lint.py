@@ -157,6 +157,73 @@ def test_lint_allows_cross_ecosystem_test_frameworks(tmp_path):
     assert [f for f in report.findings if f.rule_id.startswith("test-framework")] == []
 
 
+def test_lint_detects_stale_formatter(tmp_path):
+    # [tool.ruff] makes ruff the detected formatter, but the rules still tell the
+    # assistant to format with black.
+    (tmp_path / "pyproject.toml").write_text(
+        textwrap.dedent(
+            """\
+            [build-system]
+            requires = ["hatchling"]
+            build-backend = "hatchling.build"
+
+            [project]
+            name = "sample"
+            version = "0.1.0"
+
+            [tool.ruff]
+            line-length = 100
+            """
+        )
+    )
+    (tmp_path / "app.py").write_text("x = 1\n")
+    (tmp_path / "AGENTS.md").write_text("# sample\n\nFormat code with black before committing.\n")
+    report = lint_rules(tmp_path)
+    stale = [f for f in report.findings if f.rule_id == "formatter-stale"]
+    assert len(stale) == 1
+    assert "black" in stale[0].message
+    assert "ruff" in stale[0].message
+
+
+def test_lint_detects_conflicting_linters(tmp_path):
+    (tmp_path / "app.py").write_text("x = 1\n")
+    (tmp_path / "AGENTS.md").write_text(
+        "# sample\n\nLint with ruff. Older docs still mention flake8.\n"
+    )
+    report = lint_rules(tmp_path)
+    conflicts = [f for f in report.findings if f.rule_id == "linter-conflict"]
+    assert len(conflicts) == 1
+    assert "ruff" in conflicts[0].message and "flake8" in conflicts[0].message
+
+
+def test_lint_allows_cross_ecosystem_linters(tmp_path):
+    # Python ruff and JS eslint belong to different ecosystems; not a conflict.
+    (tmp_path / "pyproject.toml").write_text(
+        textwrap.dedent(
+            """\
+            [build-system]
+            requires = ["hatchling"]
+            build-backend = "hatchling.build"
+
+            [project]
+            name = "sample"
+            version = "0.1.0"
+
+            [tool.ruff]
+            line-length = 100
+            """
+        )
+    )
+    (tmp_path / "app.py").write_text("x = 1\n")
+    (tmp_path / "package.json").write_text('{"name": "sample"}\n')
+    (tmp_path / "index.js").write_text("console.log(1)\n")
+    (tmp_path / "AGENTS.md").write_text(
+        "# sample\n\nLint Python with ruff and the web client with eslint.\n"
+    )
+    report = lint_rules(tmp_path)
+    assert [f for f in report.findings if f.rule_id.startswith("linter")] == []
+
+
 def test_lint_json_cli_and_exit_code(tmp_path):
     (tmp_path / "AGENTS.md").write_text("# sample\n\nThis project does TODO.\n")
     result = CliRunner().invoke(main, ["lint", str(tmp_path), "--format", "json"])
