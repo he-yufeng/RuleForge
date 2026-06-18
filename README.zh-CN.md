@@ -7,7 +7,7 @@
 
 **从代码库自动生成 AI 编程助手规则文件。**
 
-RuleForge 扫描你的项目——编程语言、框架、lint 工具、测试配置、CI 设置——然后自动生成可直接使用的规则文件，支持 **Claude Code**（`CLAUDE.md`）、**Cursor**（`.cursorrules`）和 **GitHub Copilot**（`.github/copilot-instructions.md`）。
+RuleForge 扫描你的项目——编程语言、框架、lint 工具、测试配置、CI 设置——然后自动生成可直接使用的规则文件，支持 **Claude Code**（`CLAUDE.md`）、**Cursor**（`.cursorrules`）、**GitHub Copilot**（`.github/copilot-instructions.md`）、工具无关的 **`AGENTS.md`** 约定、**Windsurf**（`.windsurfrules`）和 **Cline**（`.clinerules`）。
 
 别再手写这些文件了，让你的代码库自己说话。
 
@@ -60,6 +60,9 @@ ruleforge audit .
 
 # 在 CI 里要求规则质量至少 80 分
 ruleforge audit . --min-score 80
+
+# 检查已有规则里的占位符、冲突和过时建议
+ruleforge lint .
 
 # 覆盖已有文件
 ruleforge generate . --overwrite
@@ -121,6 +124,11 @@ Package manager: poetry
 | `claude` | `CLAUDE.md` | Claude Code、Claude Desktop |
 | `cursor` | `.cursorrules` | Cursor IDE |
 | `copilot` | `.github/copilot-instructions.md` | GitHub Copilot |
+| `agents` | `AGENTS.md` | 任何读取 `AGENTS.md` 的工具无关 agent |
+| `windsurf` | `.windsurfrules` | Windsurf / Codeium |
+| `cline` | `.clinerules` | Cline |
+
+`ruleforge generate --format all` 会一次写全部六种；多次传 `--format`（如 `--format agents --format cursor`）可只选其中几种。
 
 ## 规则审计
 
@@ -142,6 +150,22 @@ ruleforge audit . --min-score 80
 ```
 
 这适合放进 CI，也适合检查手写的 `AGENTS.md`、`CLAUDE.md`、`.cursorrules` 或 Copilot instructions 是否足够具体。SARIF 输出会把缺失的规则变成 GitHub Code Scanning 告警。RuleForge 生成新规则时也会标出项目里已有的 assistant 规则文件，避免生成稿无意覆盖更严格的本地约束。
+
+## 规则 Lint
+
+`audit` 衡量规则文件覆盖了多少内容，`lint` 则找其中**写错或没法用**的指引——那种会悄悄把 agent 带偏的东西：
+
+- 没填的模板占位符（`TODO`、`FIXME`、`{{ ... }}`、`<your project name>`）
+- 互相冲突的指令，比如同时推荐 `npm` 和 `pnpm`、`pytest` 和 `unittest`，或 `black` 和 `ruff`
+- 过时的建议，比如仓库已经是 `pnpm-lock.yaml` 还让用 `yarn`，或项目已切到 `ruff` 还让用 `black` 格式化
+
+```bash
+ruleforge lint .
+ruleforge lint . --format json
+ruleforge lint . --strict   # 把 warning 也当成错误
+```
+
+占位符报为 error，工具冲突或过时报为 warning。冲突和过时检查覆盖包管理器、测试框架、linter 和 formatter。命令在有 error（`--strict` 下任意 warning）时退出非零，可直接放进 CI 步骤。冲突和过时检查只比较同一生态内的工具，所以同时真用 `pytest` 和 `jest`、或 `ruff` 和 `eslint` 的多语言仓库不会被误报。
 
 ## Python API
 
