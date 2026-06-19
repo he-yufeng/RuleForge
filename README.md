@@ -7,7 +7,7 @@
 
 **Auto-generate AI coding assistant rules from your codebase.**
 
-RuleForge scans your project — languages, frameworks, linters, test setup, CI config — and generates ready-to-use rule files for **Claude Code** (`CLAUDE.md`), **Cursor** (`.cursorrules`), **GitHub Copilot** (`.github/copilot-instructions.md`), the tool-agnostic **`AGENTS.md`** convention, **Windsurf** (`.windsurfrules`), and **Cline** (`.clinerules`).
+RuleForge scans your project — languages, frameworks, linters, test setup, CI config — and generates ready-to-use rule files for **Claude Code** (`CLAUDE.md`), **Cursor** (`.cursorrules`), **GitHub Copilot** (`.github/copilot-instructions.md`), the tool-agnostic **`AGENTS.md`** convention, **Windsurf** (`.windsurfrules`), **Cline** (`.clinerules`), and **Gemini CLI** (`GEMINI.md`).
 
 Stop writing these files by hand. Let your codebase speak for itself.
 
@@ -129,6 +129,7 @@ Package manager: poetry
 | `agents` | `AGENTS.md` | Tool-agnostic agents that read `AGENTS.md` |
 | `windsurf` | `.windsurfrules` | Windsurf / Codeium |
 | `cline` | `.clinerules` | Cline |
+| `gemini` | `GEMINI.md` | Gemini CLI |
 
 `ruleforge generate --format all` writes all six; pass `--format` repeatedly (e.g. `--format agents --format cursor`) to pick a subset.
 

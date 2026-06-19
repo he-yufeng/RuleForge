@@ -58,6 +58,18 @@ def test_generate_single_format(py_project):
     assert rules[0].filename == "CLAUDE.md"
 
 
+def test_generate_gemini_format(py_project):
+    profile = analyze_project(py_project)
+    rules = generate_rules(profile, ["gemini"])
+    assert len(rules) == 1
+    assert rules[0].format == "gemini"
+    assert rules[0].filename == "GEMINI.md"
+    # Gemini CLI uses the canonical project doc, same content as CLAUDE.md
+    claude = generate_rules(profile, ["claude"])[0].content
+    assert rules[0].content == claude
+    assert rules[0].content.strip()
+
+
 def test_claude_content(py_project):
     profile = analyze_project(py_project)
     rules = generate_rules(profile, ["claude"])

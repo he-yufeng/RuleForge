@@ -8,7 +8,7 @@ from typing import Literal
 
 from ruleforge.analyzer import ProjectProfile
 
-RuleFormat = Literal["claude", "cursor", "copilot", "agents", "windsurf", "cline"]
+RuleFormat = Literal["claude", "cursor", "copilot", "agents", "windsurf", "cline", "gemini"]
 
 
 @dataclass
@@ -258,6 +258,16 @@ def _generate_clinerules(profile: ProjectProfile) -> str:
     return content.replace(f"# {name}", f"# Rules for {name}", 1)
 
 
+def _generate_gemini_md(profile: ProjectProfile) -> str:
+    """Generate GEMINI.md format.
+
+    Gemini CLI reads ``GEMINI.md`` as its project instruction file, the same
+    role CLAUDE.md plays for Claude Code, so the canonical project-named
+    document is used as-is.
+    """
+    return _generate_claude_md(profile)
+
+
 def generate_rules(
     profile: ProjectProfile,
     formats: list[RuleFormat] | None = None,
@@ -283,6 +293,7 @@ def generate_rules(
         "agents": ("AGENTS.md", _generate_agents_md),
         "windsurf": (".windsurfrules", _generate_windsurfrules),
         "cline": (".clinerules", _generate_clinerules),
+        "gemini": ("GEMINI.md", _generate_gemini_md),
     }
 
     for fmt in formats:
