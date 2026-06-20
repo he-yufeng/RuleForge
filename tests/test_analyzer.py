@@ -75,6 +75,21 @@ def test_detect_tooling(tmp_project):
     assert profile.python_version == ">=3.9"
 
 
+def test_setup_cfg_without_flake8_section_is_not_flake8(tmp_path):
+    # setup.cfg is generic setuptools metadata here — no linter is configured.
+    (tmp_path / "main.py").write_text("print('hi')\n", encoding="utf-8")
+    (tmp_path / "setup.cfg").write_text("[metadata]\nname = demo\n", encoding="utf-8")
+    profile = analyze_project(tmp_path)
+    assert profile.linter is None
+
+
+def test_setup_cfg_with_flake8_section_detects_flake8(tmp_path):
+    (tmp_path / "main.py").write_text("print('hi')\n", encoding="utf-8")
+    (tmp_path / "setup.cfg").write_text("[flake8]\nmax-line-length = 100\n", encoding="utf-8")
+    profile = analyze_project(tmp_path)
+    assert profile.linter == "flake8"
+
+
 def test_detect_ci(tmp_project):
     profile = analyze_project(tmp_project)
     assert profile.has_ci

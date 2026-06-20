@@ -172,6 +172,22 @@ def _count_languages(root: Path) -> dict[str, int]:
     return dict(sorted(counts.items(), key=lambda x: -x[1]))
 
 
+def _setup_cfg_configures_flake8(root: Path) -> bool:
+    """True only when setup.cfg actually has a ``[flake8]`` section.
+
+    setup.cfg is a generic setuptools / mypy / coverage config file, so its mere
+    presence says nothing about linting — only a ``[flake8]`` section means the
+    project really uses flake8.
+    """
+    cfg = root / "setup.cfg"
+    if not cfg.exists():
+        return False
+    try:
+        return "[flake8]" in cfg.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+
+
 def _detect_python_details(root: Path, profile: ProjectProfile) -> None:
     """Detect Python-specific tooling and conventions."""
     pyproject = root / "pyproject.toml"
@@ -257,7 +273,7 @@ def _detect_python_details(root: Path, profile: ProjectProfile) -> None:
 
     # linter fallback
     if not profile.linter:
-        if (root / ".flake8").exists() or (root / "setup.cfg").exists():
+        if (root / ".flake8").exists() or _setup_cfg_configures_flake8(root):
             profile.linter = "flake8"
         elif (root / ".pylintrc").exists():
             profile.linter = "pylint"
