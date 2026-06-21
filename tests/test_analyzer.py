@@ -191,3 +191,18 @@ def test_detect_node(node_project):
         "lint": "eslint .",
         "test": "vitest",
     }
+
+
+def test_test_framework_detection_not_overridden_by_second_test_dir(tmp_path):
+    # Both tests/ (pytest) and test/ (unittest) exist: the first framework
+    # detected must stand, and both dirs are still recorded as source dirs.
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_a.py").write_text("import pytest\n\n\ndef test_a():\n    pass\n")
+    (tmp_path / "test").mkdir()
+    (tmp_path / "test" / "test_b.py").write_text("import unittest\n")
+
+    profile = analyze_project(tmp_path)
+
+    assert profile.test_framework == "pytest"
+    assert "tests" in profile.source_dirs
+    assert "test" in profile.source_dirs

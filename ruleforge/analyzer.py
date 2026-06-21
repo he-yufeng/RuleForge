@@ -258,6 +258,11 @@ def _detect_python_details(root: Path, profile: ProjectProfile) -> None:
             tp = root / td
             if tp.is_dir():
                 profile.source_dirs.append(td)
+                # Both "tests" and "test" can exist; record each as a source
+                # dir, but let the first framework we detect stand — without
+                # this, a later dir would override an already-correct guess.
+                if profile.test_framework:
+                    continue
                 # just peek at a few files
                 for tf in list(tp.rglob("*.py"))[:5]:
                     try:
