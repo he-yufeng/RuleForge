@@ -8,7 +8,7 @@ from typing import Literal
 
 from ruleforge.analyzer import ProjectProfile
 
-RuleFormat = Literal["claude", "cursor", "copilot", "agents", "windsurf", "cline", "gemini"]
+RuleFormat = Literal["claude", "cursor", "copilot", "agents", "windsurf", "cline", "gemini", "zed"]
 
 
 @dataclass
@@ -268,6 +268,18 @@ def _generate_gemini_md(profile: ProjectProfile) -> str:
     return _generate_claude_md(profile)
 
 
+def _generate_zed_rules(profile: ProjectProfile) -> str:
+    """Generate Zed's ``.rules`` format.
+
+    Zed's agent looks for a project ``.rules`` file first (ahead of
+    ``.cursorrules`` / ``AGENTS.md`` / ``CLAUDE.md``), so it gets the same plain
+    rules document with a "Rules for ..." heading like the other dotfile formats.
+    """
+    content = _generate_claude_md(profile)
+    name = profile.root.name
+    return content.replace(f"# {name}", f"# Rules for {name}", 1)
+
+
 def generate_rules(
     profile: ProjectProfile,
     formats: list[RuleFormat] | None = None,
@@ -294,6 +306,7 @@ def generate_rules(
         "windsurf": (".windsurfrules", _generate_windsurfrules),
         "cline": (".clinerules", _generate_clinerules),
         "gemini": ("GEMINI.md", _generate_gemini_md),
+        "zed": (".rules", _generate_zed_rules),
     }
 
     for fmt in formats:

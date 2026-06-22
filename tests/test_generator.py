@@ -70,6 +70,18 @@ def test_generate_gemini_format(py_project):
     assert rules[0].content.strip()
 
 
+def test_generate_zed_format(py_project):
+    profile = analyze_project(py_project)
+    rules = generate_rules(profile, ["zed"])
+    assert len(rules) == 1
+    assert rules[0].format == "zed"
+    # Zed reads a project-root ".rules" file.
+    assert rules[0].filename == ".rules"
+    # Plain rules document with a "Rules for ..." heading, like the other dotfiles.
+    assert rules[0].content.startswith(f"# Rules for {profile.root.name}")
+    assert rules[0].content.strip()
+
+
 def test_claude_content(py_project):
     profile = analyze_project(py_project)
     rules = generate_rules(profile, ["claude"])

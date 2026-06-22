@@ -7,7 +7,7 @@
 
 **Auto-generate AI coding assistant rules from your codebase.**
 
-RuleForge scans your project — languages, frameworks, linters, test setup, CI config — and generates ready-to-use rule files for **Claude Code** (`CLAUDE.md`), **Cursor** (`.cursorrules`), **GitHub Copilot** (`.github/copilot-instructions.md`), the tool-agnostic **`AGENTS.md`** convention, **Windsurf** (`.windsurfrules`), **Cline** (`.clinerules`), and **Gemini CLI** (`GEMINI.md`).
+RuleForge scans your project — languages, frameworks, linters, test setup, CI config — and generates ready-to-use rule files for **Claude Code** (`CLAUDE.md`), **Cursor** (`.cursorrules`), **GitHub Copilot** (`.github/copilot-instructions.md`), the tool-agnostic **`AGENTS.md`** convention, **Windsurf** (`.windsurfrules`), **Cline** (`.clinerules`), **Gemini CLI** (`GEMINI.md`), and **Zed** (`.rules`).
 
 Stop writing these files by hand. Let your codebase speak for itself.
 
@@ -130,8 +130,9 @@ Package manager: poetry
 | `windsurf` | `.windsurfrules` | Windsurf / Codeium |
 | `cline` | `.clinerules` | Cline |
 | `gemini` | `GEMINI.md` | Gemini CLI |
+| `zed` | `.rules` | Zed (reads a project `.rules` file) |
 
-`ruleforge generate --format all` writes all six; pass `--format` repeatedly (e.g. `--format agents --format cursor`) to pick a subset.
+`ruleforge generate --format all` writes all eight; pass `--format` repeatedly (e.g. `--format agents --format cursor`) to pick a subset.
 
 ## Rule Audits
 

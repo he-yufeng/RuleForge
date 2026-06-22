@@ -24,6 +24,7 @@ ALL_FORMATS: list[RuleFormat] = [
     "windsurf",
     "cline",
     "gemini",
+    "zed",
 ]
 
 
@@ -86,7 +87,7 @@ def scan(project_dir: str):
     "formats",
     multiple=True,
     type=click.Choice(
-        ["claude", "cursor", "copilot", "agents", "windsurf", "cline", "gemini", "all"]
+        ["claude", "cursor", "copilot", "agents", "windsurf", "cline", "gemini", "zed", "all"]
     ),
     default=["all"],
     help="Output format(s). Use 'all' for everything.",
@@ -146,7 +147,9 @@ def generate(
     "-f",
     "--format",
     "fmt",
-    type=click.Choice(["claude", "cursor", "copilot", "agents", "windsurf", "cline", "gemini"]),
+    type=click.Choice(
+        ["claude", "cursor", "copilot", "agents", "windsurf", "cline", "gemini", "zed"]
+    ),
     default="claude",
     help="Which format to preview.",
 )

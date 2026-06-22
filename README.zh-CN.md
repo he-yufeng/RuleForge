@@ -7,7 +7,7 @@
 
 **从代码库自动生成 AI 编程助手规则文件。**
 
-RuleForge 扫描你的项目——编程语言、框架、lint 工具、测试配置、CI 设置——然后自动生成可直接使用的规则文件，支持 **Claude Code**（`CLAUDE.md`）、**Cursor**（`.cursorrules`）、**GitHub Copilot**（`.github/copilot-instructions.md`）、工具无关的 **`AGENTS.md`** 约定、**Windsurf**（`.windsurfrules`）和 **Cline**（`.clinerules`）。
+RuleForge 扫描你的项目——编程语言、框架、lint 工具、测试配置、CI 设置——然后自动生成可直接使用的规则文件，支持 **Claude Code**（`CLAUDE.md`）、**Cursor**（`.cursorrules`）、**GitHub Copilot**（`.github/copilot-instructions.md`）、工具无关的 **`AGENTS.md`** 约定、**Windsurf**（`.windsurfrules`）、**Cline**（`.clinerules`）、**Gemini CLI**（`GEMINI.md`）和 **Zed**（`.rules`）。
 
 别再手写这些文件了，让你的代码库自己说话。
 
@@ -127,8 +127,10 @@ Package manager: poetry
 | `agents` | `AGENTS.md` | 任何读取 `AGENTS.md` 的工具无关 agent |
 | `windsurf` | `.windsurfrules` | Windsurf / Codeium |
 | `cline` | `.clinerules` | Cline |
+| `gemini` | `GEMINI.md` | Gemini CLI |
+| `zed` | `.rules` | Zed（读取项目根的 `.rules` 文件） |
 
-`ruleforge generate --format all` 会一次写全部六种；多次传 `--format`（如 `--format agents --format cursor`）可只选其中几种。
+`ruleforge generate --format all` 会一次写全部八种；多次传 `--format`（如 `--format agents --format cursor`）可只选其中几种。
 
 ## 规则审计
 
