@@ -213,6 +213,11 @@ pip install -e ".[dev]"
 pytest
 ```
 
+## Related projects
+
+- [RepoWiki](https://github.com/he-yufeng/RepoWiki) — generate wiki documentation for any codebase
+- [GitSense](https://github.com/he-yufeng/GitSense) — find open-source issues to work on and gauge how hard a repo is to contribute to
+
 ## License
 
 MIT
