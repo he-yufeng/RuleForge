@@ -8,7 +8,9 @@ from typing import Literal
 
 from ruleforge.analyzer import ProjectProfile
 
-RuleFormat = Literal["claude", "cursor", "copilot", "agents", "windsurf", "cline", "gemini", "zed"]
+RuleFormat = Literal[
+    "claude", "cursor", "copilot", "agents", "windsurf", "cline", "gemini", "zed", "aider"
+]
 
 
 @dataclass
@@ -280,6 +282,16 @@ def _generate_zed_rules(profile: ProjectProfile) -> str:
     return content.replace(f"# {name}", f"# Rules for {name}", 1)
 
 
+def _generate_aider_conventions(profile: ProjectProfile) -> str:
+    """Generate Aider's ``CONVENTIONS.md`` format.
+
+    Aider reads a project ``CONVENTIONS.md`` as its coding-guidelines file (added
+    to the chat via ``read: CONVENTIONS.md`` in ``.aider.conf.yml``), so it gets
+    the canonical project document as-is, like the other tool-agnostic formats.
+    """
+    return _generate_claude_md(profile)
+
+
 def generate_rules(
     profile: ProjectProfile,
     formats: list[RuleFormat] | None = None,
@@ -307,6 +319,7 @@ def generate_rules(
         "cline": (".clinerules", _generate_clinerules),
         "gemini": ("GEMINI.md", _generate_gemini_md),
         "zed": (".rules", _generate_zed_rules),
+        "aider": ("CONVENTIONS.md", _generate_aider_conventions),
     }
 
     for fmt in formats:
