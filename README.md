@@ -1,11 +1,16 @@
-[![中文版](https://img.shields.io/badge/lang-中文-red)](README.zh-CN.md)
+<div align="center">
+
+<img src="docs/banner.png" alt="RuleForge — auto-generate AI assistant rules from your codebase" width="100%">
+
 [![PyPI version](https://img.shields.io/pypi/v/ruleforge)](https://pypi.org/project/ruleforge/)
 [![CI](https://github.com/he-yufeng/RuleForge/actions/workflows/ci.yml/badge.svg)](https://github.com/he-yufeng/RuleForge/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-# RuleForge
+[**Quick Start**](#quick-start) · [**What It Detects**](#what-it-detects) · [**Formats**](#supported-output-formats) · [中文](README.zh-CN.md)
 
-**Auto-generate AI coding assistant rules from your codebase.**
+</div>
+
+<p align="center"><img src="docs/demo.png" alt="ruleforge generate ." width="660"></p>
 
 RuleForge scans your project — languages, frameworks, linters, test setup, CI config — and generates ready-to-use rule files for **Claude Code** (`CLAUDE.md`), **Cursor** (`.cursorrules`), **GitHub Copilot** (`.github/copilot-instructions.md`), the tool-agnostic **`AGENTS.md`** convention, **Windsurf** (`.windsurfrules`), **Cline** (`.clinerules`), **Gemini CLI** (`GEMINI.md`), **Zed** (`.rules`), and **Aider** (`CONVENTIONS.md`).
 
