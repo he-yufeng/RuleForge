@@ -1,11 +1,16 @@
-[![English](https://img.shields.io/badge/lang-English-blue)](README.md)
+<div align="center">
+
+<img src="docs/banner.png" alt="RuleForge — 从代码库自动生成 AI 助手规则" width="100%">
+
 [![PyPI version](https://img.shields.io/pypi/v/ruleforge)](https://pypi.org/project/ruleforge/)
 [![CI](https://github.com/he-yufeng/RuleForge/actions/workflows/ci.yml/badge.svg)](https://github.com/he-yufeng/RuleForge/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-# RuleForge
+[**快速开始**](#快速开始) · [**检测能力**](#检测能力) · [**输出示例**](#输出示例) · [English](README.md)
 
-**从代码库自动生成 AI 编程助手规则文件。**
+</div>
+
+<p align="center"><img src="docs/demo.png" alt="ruleforge generate ." width="660"></p>
 
 RuleForge 扫描你的项目——编程语言、框架、lint 工具、测试配置、CI 设置——然后自动生成可直接使用的规则文件，支持 **Claude Code**（`CLAUDE.md`）、**Cursor**（`.cursorrules`）、**GitHub Copilot**（`.github/copilot-instructions.md`）、工具无关的 **`AGENTS.md`** 约定、**Windsurf**（`.windsurfrules`）、**Cline**（`.clinerules`）、**Gemini CLI**（`GEMINI.md`）、**Zed**（`.rules`）和 **Aider**（`CONVENTIONS.md`）。
 
