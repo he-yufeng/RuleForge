@@ -227,10 +227,14 @@ pip install -e ".[dev]"
 pytest
 ```
 
-## Related projects
+## Related Projects
 
-- [RepoWiki](https://github.com/he-yufeng/RepoWiki) — generate wiki documentation for any codebase
-- [GitSense](https://github.com/he-yufeng/GitSense) — find open-source issues to work on and gauge how hard a repo is to contribute to
+RuleForge came out of juggling a lot of repos at once. A few other tools from the same work:
+
+- **[CoreCoder](https://github.com/he-yufeng/CoreCoder)** — want to understand how a coding agent really works? Read the whole ~1k-line engine end to end, not a black box.
+- **[RepoWiki](https://github.com/he-yufeng/RepoWiki)** — dropped into an unfamiliar codebase? It gives you a guided wiki and a where-to-start reading path, a self-hostable DeepWiki alternative.
+- **[GitSense](https://github.com/he-yufeng/GitSense)** — want to contribute to open source? It finds issues worth your time and gauges whether your PR will get merged.
+- **[CodeABC](https://github.com/he-yufeng/CodeABC)** — understand any codebase even if you don't code, built for non-programmers.
 
 ## License
 
