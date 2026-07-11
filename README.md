@@ -2,7 +2,7 @@
 
 <img src="docs/banner.png" alt="RuleForge — auto-generate AI assistant rules from your codebase" width="100%">
 
-[![PyPI version](https://img.shields.io/pypi/v/ruleforge)](https://pypi.org/project/ruleforge/)
+[![PyPI version](https://img.shields.io/pypi/v/ruleforge-ai)](https://pypi.org/project/ruleforge-ai/)
 [![CI](https://github.com/he-yufeng/RuleForge/actions/workflows/ci.yml/badge.svg)](https://github.com/he-yufeng/RuleForge/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -44,7 +44,7 @@ Language counts respect `.gitignore`, so generated bundles and local artifacts d
 ## Installation
 
 ```bash
-pip install ruleforge
+pip install ruleforge-ai
 ```
 
 ## Quick Start

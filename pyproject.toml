@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ruleforge"
+name = "ruleforge-ai"
 version = "0.1.0"
 description = "Generate AI assistant rules (CLAUDE.md, .cursorrules, copilot-instructions) from codebase analysis"
 readme = "README.md"
@@ -62,3 +62,6 @@ select = ["E", "F", "W", "I"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["ruleforge"]
