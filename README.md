@@ -208,7 +208,6 @@ write_rules(rules, "./my-project")
 The detection-and-generate core is stable. The next steps mostly chip away at the limitations above:
 
 - **Light code-semantic detection** — sample a few representative source files for naming and layout conventions, instead of inferring everything from config files and extensions.
-- **More assistant formats** — emit rules for Windsurf, Cline, and Zed alongside CLAUDE.md / `.cursorrules` / Copilot; the generator already separates content from format, so each new target is mostly a template.
 - **Drift detection** — a `ruleforge check` that flags when committed rules have fallen behind the project (new commands, moved structure), so the files don't quietly go stale.
 - **Per-package rules in a monorepo** — detect workspaces and emit scoped rule files per package, not just one set at the repo root.
 
