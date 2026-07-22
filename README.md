@@ -71,6 +71,9 @@ ruleforge audit . --min-score 80
 # Lint existing rules for placeholders, conflicts, and stale advice
 ruleforge lint .
 
+# Fail CI when the rules fall behind the project (drift)
+ruleforge check .
+
 # Overwrite existing files
 ruleforge generate . --overwrite
 
@@ -208,7 +211,7 @@ write_rules(rules, "./my-project")
 The detection-and-generate core is stable. The next steps mostly chip away at the limitations above:
 
 - **Light code-semantic detection** — sample a few representative source files for naming and layout conventions, instead of inferring everything from config files and extensions.
-- **Drift detection** — a `ruleforge check` that flags when committed rules have fallen behind the project (new commands, moved structure), so the files don't quietly go stale.
+- ~~**Drift detection**~~ — **shipped in 0.2.0**: `ruleforge check` flags when committed rules have fallen behind the project (new package manager, test runner, framework, CI) and fails CI on error-level drift.
 - **Per-package rules in a monorepo** — detect workspaces and emit scoped rule files per package, not just one set at the repo root.
 
 ## Contributing

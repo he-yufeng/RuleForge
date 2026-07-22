@@ -268,5 +268,66 @@ def lint(project_dir: str, output_format: str, strict: bool):
         raise SystemExit(1)
 
 
+@main.command()
+@click.argument("project_dir", default=".")
+@click.option(
+    "--file",
+    "rule_file",
+    type=click.Path(exists=True),
+    default=None,
+    help="Rule file to check (defaults to the first rule file found).",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    help="Output format.",
+)
+@click.option(
+    "--strict",
+    is_flag=True,
+    help="Treat warnings as errors when setting the exit code.",
+)
+def check(project_dir: str, rule_file: str | None, output_format: str, strict: bool):
+    """Flag rules that have fallen behind the project (drift).
+
+    Exits 1 when error-level drift is found, so CI can gate on it. With
+    --strict, warnings also fail the check.
+    """
+    from ruleforge.drift import check_drift
+
+    report = check_drift(project_dir, rule_file)
+
+    if output_format == "json":
+        click.echo(report.to_json())
+    else:
+        target = report.rule_file.name if report.rule_file else "no rule file"
+        console.print(f"[bold]Drift check:[/bold] {target}")
+        if not report.findings:
+            console.print("[green]Rules are up to date with the project.[/green]")
+        else:
+            table = Table(show_lines=True)
+            table.add_column("Severity")
+            table.add_column("Rule", style="bold cyan")
+            table.add_column("Message")
+            for finding in report.findings:
+                color = "red" if finding.severity == "error" else "yellow"
+                table.add_row(
+                    f"[{color}]{finding.severity}[/{color}]",
+                    finding.rule_id,
+                    finding.message,
+                )
+            console.print(table)
+        errors = sum(1 for f in report.findings if f.severity == "error")
+        warnings = sum(1 for f in report.findings if f.severity == "warning")
+        console.print(f"\n[dim]{errors} error(s), {warnings} warning(s)[/dim]")
+
+    errors = sum(1 for f in report.findings if f.severity == "error")
+    warnings = sum(1 for f in report.findings if f.severity == "warning")
+    if errors or (strict and warnings):
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":
     main()
