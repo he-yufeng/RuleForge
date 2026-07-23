@@ -171,6 +171,7 @@ Where `audit` measures how much a rule file covers, `lint` looks for guidance th
 - leftover template placeholders (`TODO`, `FIXME`, `{{ ... }}`, `<your project name>`)
 - conflicting directives, like recommending both `npm` and `pnpm`, `pytest` and `unittest`, or `black` and `ruff`
 - stale advice, like telling the agent to use `yarn` when the repo has a `pnpm-lock.yaml`, or to format with `black` when the project has switched to `ruff`
+- phantom commands, like telling the agent to run `npm run buidl` or `make tes` when no package.json script or Makefile target by that name exists
 
 ```bash
 ruleforge lint .

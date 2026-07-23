@@ -277,3 +277,68 @@ def test_lint_does_not_flag_framework_in_use(tmp_path):
     )
     report = lint_rules(tmp_path)
     assert [f for f in report.findings if f.rule_id == "framework-stale"] == []
+
+
+def _write_package_json(tmp_path, scripts=None):
+    (tmp_path / "package.json").write_text(
+        json.dumps({"name": "sample", "version": "1.0.0", "scripts": scripts or {}})
+    )
+
+
+def test_lint_flags_phantom_npm_script(tmp_path):
+    _write_pyproject(tmp_path)
+    _write_package_json(tmp_path, {"test": "vitest run", "build": "tsc"})
+    (tmp_path / "AGENTS.md").write_text(
+        "# sample\n\nRun `npm run buidl` to compile, then `npm run build`.\n"
+    )
+    report = lint_rules(tmp_path)
+    phantom = [f for f in report.findings if f.rule_id == "phantom-command"]
+    assert len(phantom) == 1
+    assert "buidl" in phantom[0].message
+    assert phantom[0].file == "AGENTS.md"
+
+
+def test_lint_npm_builtins_and_declared_scripts_are_clean(tmp_path):
+    _write_pyproject(tmp_path)
+    _write_package_json(tmp_path, {"test": "vitest run", "build": "tsc"})
+    (tmp_path / "AGENTS.md").write_text(
+        "# sample\n\nUse `npm install`, `npm test`, and `npm run build`.\n"
+    )
+    report = lint_rules(tmp_path)
+    assert [f for f in report.findings if f.rule_id == "phantom-command"] == []
+
+
+def test_lint_flags_phantom_make_target(tmp_path):
+    _write_pyproject(tmp_path)
+    (tmp_path / "Makefile").write_text("test:\n\tpytest\n\nbuild:\n\techo ok\n")
+    (tmp_path / "AGENTS.md").write_text("# sample\n\nVerify with `make tes`.\n")
+    report = lint_rules(tmp_path)
+    phantom = [f for f in report.findings if f.rule_id == "phantom-command"]
+    assert len(phantom) == 1
+    assert "make tes" in phantom[0].message
+
+
+def test_lint_make_declared_targets_are_clean(tmp_path):
+    _write_pyproject(tmp_path)
+    (tmp_path / "Makefile").write_text("test:\n\tpytest\n")
+    (tmp_path / "AGENTS.md").write_text("# sample\n\nVerify with `make test`.\n")
+    report = lint_rules(tmp_path)
+    assert [f for f in report.findings if f.rule_id == "phantom-command"] == []
+
+
+def test_lint_phantom_check_skips_without_ground_truth(tmp_path):
+    _write_pyproject(tmp_path)
+    (tmp_path / "AGENTS.md").write_text("# sample\n\nRun `npm run buidl` then `make tes`.\n")
+    report = lint_rules(tmp_path)
+    assert [f for f in report.findings if f.rule_id == "phantom-command"] == []
+
+
+def test_lint_monorepo_subpackage_script_counts(tmp_path):
+    _write_pyproject(tmp_path)
+    (tmp_path / "web").mkdir()
+    (tmp_path / "web" / "package.json").write_text(
+        json.dumps({"name": "web", "scripts": {"dev": "vite"}})
+    )
+    (tmp_path / "AGENTS.md").write_text("# sample\n\nStart with `npm run dev`.\n")
+    report = lint_rules(tmp_path)
+    assert [f for f in report.findings if f.rule_id == "phantom-command"] == []

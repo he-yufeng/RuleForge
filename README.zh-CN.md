@@ -168,6 +168,7 @@ ruleforge audit . --min-score 80
 
 - 没填的模板占位符（`TODO`、`FIXME`、`{{ ... }}`、`<your project name>`）
 - 互相冲突的指令，比如同时推荐 `npm` 和 `pnpm`、`pytest` 和 `unittest`，或 `black` 和 `ruff`
+- 不存在的命令，比如让 agent 跑 `npm run buidl` 或 `make tes`，但 package.json 和 Makefile 里根本没有这个脚本或目标
 - 过时的建议，比如仓库已经是 `pnpm-lock.yaml` 还让用 `yarn`，或项目已切到 `ruff` 还让用 `black` 格式化
 
 ```bash

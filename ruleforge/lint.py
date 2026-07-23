@@ -164,6 +164,7 @@ def lint_rules(project_dir: str | Path) -> RuleLintReport:
             lowered=lowered,
         )
     )
+    findings.extend(_check_phantom_commands(profile.root, rule_files))
 
     return RuleLintReport(
         root=profile.root,
@@ -284,3 +285,119 @@ def _check_framework_groups(
 
 def _mentions_word(text: str, word: str) -> bool:
     return re.search(rf"\b{re.escape(word)}\b", text) is not None
+
+
+# npm-family subcommands that are builtins, not project scripts.
+_NPM_BUILTINS = frozenset({
+    "test", "start", "install", "ci", "publish", "pack", "link", "login",
+    "logout", "init", "create", "add", "remove", "update", "audit", "cache",
+    "config", "dedupe", "exec", "run",
+})
+# make's special/declared names that are not runnable targets.
+_MAKE_SPECIAL_TARGETS = frozenset({
+    "PHONY", "SUFFIXES", "DEFAULT", "PRECIOUS", "INTERMEDIATE", "SECONDARY",
+    "EXPORT", "INCLUDE",
+})
+
+_SCRIPT_RE = re.compile(r"\b(?:npm|pnpm|yarn|bun)(?:\s+run)?\s+([a-z][a-z0-9:_-]*)", re.IGNORECASE)
+_MAKE_RE = re.compile(r"\bmake\s+([a-zA-Z][a-zA-Z0-9_.-]*)", re.IGNORECASE)
+_MAKE_TARGET_RE = re.compile(r"^([a-zA-Z0-9_.-]+)\s*:(?![=])", re.MULTILINE)
+
+
+def _collect_package_scripts(root: Path) -> set[str]:
+    names: set[str] = set()
+    candidates = [root / "package.json"] + sorted(root.glob("*/package.json"))
+    for pkg in candidates:
+        try:
+            data = json.loads(pkg.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        scripts = data.get("scripts")
+        if isinstance(scripts, dict):
+            names.update(str(name) for name in scripts)
+    return names
+
+
+def _collect_make_targets(root: Path) -> set[str] | None:
+    makefile = root / "Makefile"
+    if not makefile.exists():
+        return None
+    try:
+        text = makefile.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    if re.search(r"^%.*:", text, re.MULTILINE):
+        return None  # pattern rules make static target lookup unreliable
+    targets = set()
+    for match in _MAKE_TARGET_RE.finditer(text):
+        name = match.group(1)
+        if name.startswith(".") or name in _MAKE_SPECIAL_TARGETS:
+            continue
+        targets.add(name)
+    return targets
+
+
+def _check_phantom_commands(root: Path, rule_files: list[RuleFile]) -> list[LintFinding]:
+    """Flag commands the rules cite that the project does not actually have.
+
+    An assistant told to run `npm run buidl` or `make tes` burns its first
+    turn rediscovering the real command. Only judged where ground truth
+    exists: script names from package.json (root and one level down) for the
+    npm family, declared targets for make.
+    """
+    findings: list[LintFinding] = []
+    scripts = _collect_package_scripts(root)
+    make_targets = _collect_make_targets(root)
+    if not scripts and make_targets is None:
+        return findings
+
+    seen: set[tuple[str, str]] = set()
+    for rule in rule_files:
+        try:
+            name = rule.path.relative_to(root).as_posix()
+        except ValueError:
+            name = rule.path.name
+        for lineno, line in enumerate(rule.content.splitlines(), start=1):
+            if scripts:
+                for match in _SCRIPT_RE.finditer(line):
+                    script = match.group(1)
+                    if script.lower() in _NPM_BUILTINS or script in scripts:
+                        continue
+                    key = (name, match.group(0).strip())
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    findings.append(
+                        LintFinding(
+                            rule_id="phantom-command",
+                            severity=SEVERITY_WARNING,
+                            message=(
+                                f"`{match.group(0).strip()}` is cited, but no package.json "
+                                f"declares a script named '{script}'."
+                            ),
+                            file=name,
+                            line=lineno,
+                        )
+                    )
+            if make_targets is not None:
+                for match in _MAKE_RE.finditer(line):
+                    target = match.group(1)
+                    if target in make_targets or target in _MAKE_SPECIAL_TARGETS:
+                        continue
+                    key = (name, match.group(0).strip())
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    findings.append(
+                        LintFinding(
+                            rule_id="phantom-command",
+                            severity=SEVERITY_WARNING,
+                            message=(
+                                f"`{match.group(0).strip()}` is cited, but the Makefile "
+                                f"has no target named '{target}'."
+                            ),
+                            file=name,
+                            line=lineno,
+                        )
+                    )
+    return findings
