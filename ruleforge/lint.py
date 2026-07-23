@@ -268,7 +268,11 @@ def _check_framework_groups(
         if not present:
             continue  # repo uses nothing from this category -> nothing to compare
         present_lower = {fw.lower() for fw in present}
-        stale = [fw for fw in group if fw not in present_lower and _mentions_word(lowered, fw)]
+        stale = [
+            fw
+            for fw in group
+            if fw not in present_lower and _mentions_word(lowered, fw)
+        ]
         if stale:
             findings.append(
                 LintFinding(
@@ -288,18 +292,47 @@ def _mentions_word(text: str, word: str) -> bool:
 
 
 # npm-family subcommands that are builtins, not project scripts.
-_NPM_BUILTINS = frozenset({
-    "test", "start", "install", "ci", "publish", "pack", "link", "login",
-    "logout", "init", "create", "add", "remove", "update", "audit", "cache",
-    "config", "dedupe", "exec", "run",
-})
+_NPM_BUILTINS = frozenset(
+    {
+        "test",
+        "start",
+        "install",
+        "ci",
+        "publish",
+        "pack",
+        "link",
+        "login",
+        "logout",
+        "init",
+        "create",
+        "add",
+        "remove",
+        "update",
+        "audit",
+        "cache",
+        "config",
+        "dedupe",
+        "exec",
+        "run",
+    }
+)
 # make's special/declared names that are not runnable targets.
-_MAKE_SPECIAL_TARGETS = frozenset({
-    "PHONY", "SUFFIXES", "DEFAULT", "PRECIOUS", "INTERMEDIATE", "SECONDARY",
-    "EXPORT", "INCLUDE",
-})
+_MAKE_SPECIAL_TARGETS = frozenset(
+    {
+        "PHONY",
+        "SUFFIXES",
+        "DEFAULT",
+        "PRECIOUS",
+        "INTERMEDIATE",
+        "SECONDARY",
+        "EXPORT",
+        "INCLUDE",
+    }
+)
 
-_SCRIPT_RE = re.compile(r"\b(?:npm|pnpm|yarn|bun)(?:\s+run)?\s+([a-z][a-z0-9:_-]*)", re.IGNORECASE)
+_SCRIPT_RE = re.compile(
+    r"\b(?:npm|pnpm|yarn|bun)(?:\s+run)?\s+([a-z][a-z0-9:_-]*)", re.IGNORECASE
+)
 _MAKE_RE = re.compile(r"\bmake\s+([a-zA-Z][a-zA-Z0-9_.-]*)", re.IGNORECASE)
 _MAKE_TARGET_RE = re.compile(r"^([a-zA-Z0-9_.-]+)\s*:(?![=])", re.MULTILINE)
 
@@ -337,7 +370,9 @@ def _collect_make_targets(root: Path) -> set[str] | None:
     return targets
 
 
-def _check_phantom_commands(root: Path, rule_files: list[RuleFile]) -> list[LintFinding]:
+def _check_phantom_commands(
+    root: Path, rule_files: list[RuleFile]
+) -> list[LintFinding]:
     """Flag commands the rules cite that the project does not actually have.
 
     An assistant told to run `npm run buidl` or `make tes` burns its first
