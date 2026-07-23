@@ -8,7 +8,8 @@ from ruleforge.lint import lint_rules
 
 
 def _write_pyproject(tmp_path, build_backend="hatchling.build", extra=""):
-    (tmp_path / "pyproject.toml").write_text(textwrap.dedent(f"""\
+    (tmp_path / "pyproject.toml").write_text(
+        textwrap.dedent(f"""\
             [build-system]
             requires = ["hatchling"]
             build-backend = "{build_backend}"
@@ -17,7 +18,8 @@ def _write_pyproject(tmp_path, build_backend="hatchling.build", extra=""):
             name = "sample"
             version = "0.1.0"
             {extra}
-            """))
+            """)
+    )
 
 
 def test_lint_clean_rules_have_no_findings(tmp_path):
@@ -33,21 +35,21 @@ def test_lint_clean_rules_have_no_findings(tmp_path):
 def test_lint_reads_cline_rules_file(tmp_path):
     # .clinerules is a generated format, so lint must discover and read it
     _write_pyproject(tmp_path)
-    (tmp_path / ".clinerules").write_text(
-        "# sample\n\nPython project. Run pytest and ruff.\n"
-    )
+    (tmp_path / ".clinerules").write_text("# sample\n\nPython project. Run pytest and ruff.\n")
     report = lint_rules(tmp_path)
     assert any(p.name == ".clinerules" for p in report.files)
 
 
 def test_lint_flags_placeholder_with_line_number(tmp_path):
-    (tmp_path / "AGENTS.md").write_text(textwrap.dedent("""\
+    (tmp_path / "AGENTS.md").write_text(
+        textwrap.dedent("""\
             # sample
 
             This project does TODO.
             Run the tests with `<your test command here>`.
             Deploy target: {{ environment }}.
-            """))
+            """)
+    )
     report = lint_rules(tmp_path)
     placeholders = [f for f in report.findings if f.rule_id == "placeholder"]
     assert len(placeholders) == 3
@@ -58,12 +60,14 @@ def test_lint_flags_placeholder_with_line_number(tmp_path):
 
 
 def test_lint_ignores_html_and_generics_in_angle_brackets(tmp_path):
-    (tmp_path / "AGENTS.md").write_text(textwrap.dedent("""\
+    (tmp_path / "AGENTS.md").write_text(
+        textwrap.dedent("""\
             # sample
 
             <details><summary>Notes</summary></details>
             Helpers return `Result<String>` values.
-            """))
+            """)
+    )
     report = lint_rules(tmp_path)
     assert [f for f in report.findings if f.rule_id == "placeholder"] == []
 
@@ -96,7 +100,8 @@ def test_lint_detects_stale_package_manager(tmp_path):
 
 def test_lint_detects_stale_test_framework(tmp_path):
     # pytest is detected from pyproject, but the rules still point at unittest.
-    (tmp_path / "pyproject.toml").write_text(textwrap.dedent("""\
+    (tmp_path / "pyproject.toml").write_text(
+        textwrap.dedent("""\
             [build-system]
             requires = ["hatchling"]
             build-backend = "hatchling.build"
@@ -107,7 +112,8 @@ def test_lint_detects_stale_test_framework(tmp_path):
 
             [tool.pytest.ini_options]
             testpaths = ["tests"]
-            """))
+            """)
+    )
     (tmp_path / "app.py").write_text("x = 1\n")
     (tmp_path / "AGENTS.md").write_text("# sample\n\nWrite tests with unittest.\n")
     report = lint_rules(tmp_path)
@@ -119,7 +125,8 @@ def test_lint_detects_stale_test_framework(tmp_path):
 
 def test_lint_allows_cross_ecosystem_test_frameworks(tmp_path):
     # A polyglot repo may legitimately run both pytest and jest; do not flag that.
-    (tmp_path / "pyproject.toml").write_text(textwrap.dedent("""\
+    (tmp_path / "pyproject.toml").write_text(
+        textwrap.dedent("""\
             [build-system]
             requires = ["hatchling"]
             build-backend = "hatchling.build"
@@ -130,7 +137,8 @@ def test_lint_allows_cross_ecosystem_test_frameworks(tmp_path):
 
             [tool.pytest.ini_options]
             testpaths = ["tests"]
-            """))
+            """)
+    )
     (tmp_path / "app.py").write_text("x = 1\n")
     (tmp_path / "AGENTS.md").write_text(
         "# sample\n\nRun pytest for Python and jest for the web client.\n"
@@ -142,7 +150,8 @@ def test_lint_allows_cross_ecosystem_test_frameworks(tmp_path):
 def test_lint_detects_stale_formatter(tmp_path):
     # [tool.ruff] makes ruff the detected formatter, but the rules still tell the
     # assistant to format with black.
-    (tmp_path / "pyproject.toml").write_text(textwrap.dedent("""\
+    (tmp_path / "pyproject.toml").write_text(
+        textwrap.dedent("""\
             [build-system]
             requires = ["hatchling"]
             build-backend = "hatchling.build"
@@ -153,11 +162,10 @@ def test_lint_detects_stale_formatter(tmp_path):
 
             [tool.ruff]
             line-length = 100
-            """))
-    (tmp_path / "app.py").write_text("x = 1\n")
-    (tmp_path / "AGENTS.md").write_text(
-        "# sample\n\nFormat code with black before committing.\n"
+            """)
     )
+    (tmp_path / "app.py").write_text("x = 1\n")
+    (tmp_path / "AGENTS.md").write_text("# sample\n\nFormat code with black before committing.\n")
     report = lint_rules(tmp_path)
     stale = [f for f in report.findings if f.rule_id == "formatter-stale"]
     assert len(stale) == 1
@@ -178,7 +186,8 @@ def test_lint_detects_conflicting_linters(tmp_path):
 
 def test_lint_allows_cross_ecosystem_linters(tmp_path):
     # Python ruff and JS eslint belong to different ecosystems; not a conflict.
-    (tmp_path / "pyproject.toml").write_text(textwrap.dedent("""\
+    (tmp_path / "pyproject.toml").write_text(
+        textwrap.dedent("""\
             [build-system]
             requires = ["hatchling"]
             build-backend = "hatchling.build"
@@ -189,7 +198,8 @@ def test_lint_allows_cross_ecosystem_linters(tmp_path):
 
             [tool.ruff]
             line-length = 100
-            """))
+            """)
+    )
     (tmp_path / "app.py").write_text("x = 1\n")
     (tmp_path / "package.json").write_text('{"name": "sample"}\n')
     (tmp_path / "index.js").write_text("console.log(1)\n")
@@ -211,9 +221,7 @@ def test_lint_json_cli_and_exit_code(tmp_path):
 
 
 def test_lint_clean_cli_exits_zero(tmp_path):
-    (tmp_path / "AGENTS.md").write_text(
-        "# sample\n\nA tidy rule file with no problems.\n"
-    )
+    (tmp_path / "AGENTS.md").write_text("# sample\n\nA tidy rule file with no problems.\n")
     result = CliRunner().invoke(main, ["lint", str(tmp_path)])
     assert result.exit_code == 0
     assert "No problems found." in result.output
@@ -306,9 +314,7 @@ def test_lint_make_declared_targets_are_clean(tmp_path):
 
 def test_lint_phantom_check_skips_without_ground_truth(tmp_path):
     _write_pyproject(tmp_path)
-    (tmp_path / "AGENTS.md").write_text(
-        "# sample\n\nRun `npm run buidl` then `make tes`.\n"
-    )
+    (tmp_path / "AGENTS.md").write_text("# sample\n\nRun `npm run buidl` then `make tes`.\n")
     report = lint_rules(tmp_path)
     assert [f for f in report.findings if f.rule_id == "phantom-command"] == []
 
