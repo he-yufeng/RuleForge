@@ -77,6 +77,9 @@ ruleforge check .
 # Overwrite existing files
 ruleforge generate . --overwrite
 
+# In a monorepo, also write a scoped CLAUDE.md into each workspace package
+ruleforge generate . --per-package
+
 # Output to a different directory
 ruleforge generate . -o /tmp/rules
 ```
@@ -213,7 +216,7 @@ The detection-and-generate core is stable. The next steps mostly chip away at th
 
 - **Light code-semantic detection** — sample a few representative source files for naming and layout conventions, instead of inferring everything from config files and extensions.
 - ~~**Drift detection**~~ — **shipped in 0.2.0**: `ruleforge check` flags when committed rules have fallen behind the project (new package manager, test runner, framework, CI) and fails CI on error-level drift.
-- **Per-package rules in a monorepo** — detect workspaces and emit scoped rule files per package, not just one set at the repo root.
+- ~~**Per-package rules in a monorepo**~~ — **shipped in 0.4.0**: workspaces are read from `pnpm-workspace.yaml`, `package.json` `workspaces`, and Cargo `[workspace]` members, and `ruleforge generate --per-package` writes a scoped `CLAUDE.md` into each package (its own stack and commands), keeping existing files unless `--overwrite`.
 
 ## Contributing
 

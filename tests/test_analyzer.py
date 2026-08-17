@@ -206,3 +206,59 @@ def test_test_framework_detection_not_overridden_by_second_test_dir(tmp_path):
     assert profile.test_framework == "pytest"
     assert "tests" in profile.source_dirs
     assert "test" in profile.source_dirs
+
+
+def _make_js_pkg(root, rel, name, scripts=None):
+    pkg = root / rel
+    pkg.mkdir(parents=True)
+    (pkg / "package.json").write_text(json.dumps({"name": name, "scripts": scripts or {}}))
+    (pkg / "index.ts").write_text("export const x = 1\n")
+    return pkg
+
+
+def test_detect_pnpm_workspaces(tmp_path):
+    (tmp_path / "pnpm-workspace.yaml").write_text('packages:\n  - "packages/*"\n')
+    _make_js_pkg(tmp_path, "packages/web", "@app/web", {"test": "vitest", "build": "tsc"})
+    _make_js_pkg(tmp_path, "packages/api", "@app/api")
+    (tmp_path / "packages" / "README.md").mkdir(exist_ok=True)  # no manifest, not a package
+
+    profile = analyze_project(tmp_path)
+
+    assert profile.monorepo
+    paths = [ws.path for ws in profile.workspaces]
+    assert paths == ["packages/api", "packages/web"]
+    web = next(ws for ws in profile.workspaces if ws.name == "@app/web")
+    assert web.languages.get("TypeScript") == 1
+    assert web.commands["test"] == "npm test"
+    assert web.commands["build"] == "npm run build"
+    api = next(ws for ws in profile.workspaces if ws.name == "@app/api")
+    assert "test" not in api.commands
+
+
+def test_detect_package_json_workspaces(tmp_path):
+    (tmp_path / "package.json").write_text(json.dumps({"name": "root", "workspaces": ["libs/*"]}))
+    _make_js_pkg(tmp_path, "libs/util", "util")
+
+    profile = analyze_project(tmp_path)
+
+    assert [ws.name for ws in profile.workspaces] == ["util"]
+
+
+def test_detect_cargo_workspace_members(tmp_path):
+    (tmp_path / "Cargo.toml").write_text('[workspace]\nmembers = ["crates/core"]\n')
+    core = tmp_path / "crates" / "core"
+    core.mkdir(parents=True)
+    (core / "Cargo.toml").write_text('[package]\nname = "core"\n')
+
+    profile = analyze_project(tmp_path)
+
+    assert [ws.name for ws in profile.workspaces] == ["core"]
+
+
+def test_no_workspace_manifests_no_packages(tmp_path):
+    (tmp_path / "package.json").write_text(json.dumps({"name": "plain"}))
+    (tmp_path / "packages").mkdir()  # a bare packages/ dir is not a workspace claim
+
+    profile = analyze_project(tmp_path)
+
+    assert profile.workspaces == []

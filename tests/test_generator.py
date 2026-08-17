@@ -1,5 +1,6 @@
 """Tests for the rule generator."""
 
+import json
 import textwrap
 
 import pytest
@@ -214,3 +215,67 @@ def test_windsurf_and_cline_use_rules_header(py_project):
     rules = {r.format: r.content for r in generate_rules(profile, ["windsurf", "cline"])}
     assert rules["windsurf"].startswith("# Rules for ")
     assert rules["cline"].startswith("# Rules for ")
+
+
+def _profile_with_workspaces(tmp_path):
+    from ruleforge.analyzer import WorkspacePackage
+
+    profile = analyze_project(tmp_path)
+    profile.monorepo = True
+    profile.workspaces = [
+        WorkspacePackage(
+            path="packages/web",
+            name="@app/web",
+            languages={"TypeScript": 12},
+            commands={"test": "npm test"},
+        )
+    ]
+    return profile
+
+
+def test_generate_package_rules_scoped(tmp_path):
+    from ruleforge.generator import generate_package_rules
+
+    profile = _profile_with_workspaces(tmp_path)
+    rules = generate_package_rules(profile)
+
+    assert len(rules) == 1
+    rule = rules[0]
+    assert rule.filename == "packages/web/CLAUDE.md"
+    assert "# @app/web" in rule.content
+    assert "TypeScript (12 files)" in rule.content
+    assert "`npm test`" in rule.content
+    assert "repo-wide conventions" in rule.content
+
+
+def test_generate_package_rules_empty_without_workspaces(tmp_path):
+    from ruleforge.generator import generate_package_rules
+
+    profile = analyze_project(tmp_path)
+    assert generate_package_rules(profile) == []
+
+
+def test_cli_generate_per_package_writes_scoped_files(tmp_path, monkeypatch):
+    from click.testing import CliRunner
+
+    from ruleforge.cli import main
+
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pnpm-workspace.yaml").write_text('packages:\n  - "packages/*"\n')
+    pkg = tmp_path / "packages" / "web"
+    pkg.mkdir(parents=True)
+    (pkg / "package.json").write_text(
+        json.dumps({"name": "@app/web", "scripts": {"test": "vitest"}})
+    )
+
+    result = CliRunner().invoke(main, ["generate", "--per-package"])
+
+    assert result.exit_code == 0
+    scoped = tmp_path / "packages" / "web" / "CLAUDE.md"
+    assert scoped.exists()
+    assert "# @app/web" in scoped.read_text()
+    # second run without --overwrite keeps the existing file
+    scoped.write_text("custom")
+    result2 = CliRunner().invoke(main, ["generate", "--per-package"])
+    assert result2.exit_code == 0
+    assert scoped.read_text() == "custom"

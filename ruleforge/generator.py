@@ -332,6 +332,49 @@ def generate_rules(
     return results
 
 
+def generate_package_rules(profile: ProjectProfile) -> list[GeneratedRule]:
+    """Generate one scoped CLAUDE.md per detected workspace package.
+
+    These are deliberately short: the root rules carry the project-wide
+    conventions, and the package file only adds what differs inside the
+    package (its stack and its own commands). Nested CLAUDE.md is the
+    established convention agents read when working inside a subdirectory.
+    """
+    rules: list[GeneratedRule] = []
+    for ws in profile.workspaces:
+        lines = [
+            f"# {ws.name}",
+            "",
+            f"Scoped rules for `{ws.path}/`. The repo-wide conventions live in the root",
+            "rule file and still apply here.",
+            "",
+            "## Stack",
+            "",
+        ]
+        if ws.languages:
+            langs = ", ".join(f"{lang} ({count} files)" for lang, count in ws.languages.items())
+            lines.append(f"- Languages: {langs}")
+        else:
+            lines.append("- Languages: none detected")
+        if ws.commands:
+            lines += ["", "## Commands", ""]
+            lines += [
+                f"- {kind}: `{cmd}` (run from this directory)" for kind, cmd in ws.commands.items()
+            ]
+        lines += [
+            "",
+            "Keep changes inside this package self-contained; cross-package imports go",
+            "through the published entry points, not deep paths.",
+            "",
+        ]
+        rules.append(
+            GeneratedRule(
+                filename=f"{ws.path}/CLAUDE.md", content="\n".join(lines), format="claude"
+            )
+        )
+    return rules
+
+
 def write_rules(
     rules: list[GeneratedRule],
     project_dir: str | Path,

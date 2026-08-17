@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import sys
@@ -36,7 +37,18 @@ class ProjectProfile:
     node_version: str | None = None
     entry_points: list[str] = field(default_factory=list)
     monorepo: bool = False
+    workspaces: list[WorkspacePackage] = field(default_factory=list)
     extra: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class WorkspacePackage:
+    """One detected package inside a monorepo workspace."""
+
+    path: str  # relative to the repo root, e.g. "packages/web"
+    name: str  # manifest name when readable, else the directory name
+    languages: dict[str, int] = field(default_factory=dict)
+    commands: dict[str, str] = field(default_factory=dict)  # e.g. {"test": "npm test"}
 
 
 # map file extensions to language names
@@ -507,6 +519,132 @@ def _detect_misc(root: Path, profile: ProjectProfile) -> None:
     for ep in ["main.py", "app.py", "index.ts", "index.js", "main.go", "main.rs"]:
         if (root / ep).exists() or (root / "src" / ep).exists():
             profile.entry_points.append(ep)
+
+    _detect_workspaces(root, profile)
+
+
+def _workspace_patterns(root: Path) -> list[str]:
+    """Collect workspace member globs from the usual monorepo manifests."""
+    patterns: list[str] = []
+    pnpm = root / "pnpm-workspace.yaml"
+    if pnpm.exists():
+        try:
+            data = yaml.safe_load(pnpm.read_text(encoding="utf-8", errors="replace"))
+            if isinstance(data, dict) and isinstance(data.get("packages"), list):
+                patterns.extend(str(p) for p in data["packages"])
+        except yaml.YAMLError:
+            pass
+    pkg_json = root / "package.json"
+    if pkg_json.exists():
+        try:
+            data = json.loads(pkg_json.read_text(encoding="utf-8", errors="replace"))
+            ws = data.get("workspaces")
+            if isinstance(ws, list):
+                patterns.extend(str(p) for p in ws)
+            elif isinstance(ws, dict) and isinstance(ws.get("packages"), list):
+                patterns.extend(str(p) for p in ws["packages"])
+        except json.JSONDecodeError:
+            pass
+    cargo = root / "Cargo.toml"
+    if cargo.exists():
+        try:
+            members = _load_toml(cargo).get("workspace", {}).get("members")
+            if isinstance(members, list):
+                patterns.extend(str(m) for m in members)
+        except Exception:
+            pass
+    return patterns
+
+
+def _workspace_glob_dirs(root: Path, patterns: list[str]) -> list[Path]:
+    """Expand the common single-star workspace globs ("packages/*") to dirs."""
+    dirs: list[Path] = []
+    for pat in patterns:
+        pat = pat.strip().strip("\"'")
+        if not pat or pat.startswith("!"):
+            continue
+        if "*" not in pat:
+            candidate = root / pat
+            if candidate.is_dir():
+                dirs.append(candidate)
+            continue
+        # recursive or multi-star globs stay unexpanded; they are rare and
+        # guessing their intent is worse than skipping them.
+        if pat.count("*") != 1 or not pat.endswith("/*"):
+            continue
+        base = root / pat[:-2]
+        if base.is_dir():
+            dirs.extend(sorted(p for p in base.iterdir() if p.is_dir()))
+    return dirs
+
+
+def _package_manifest_name(pkg_dir: Path) -> str | None:
+    pkg_json = pkg_dir / "package.json"
+    if pkg_json.exists():
+        try:
+            name = json.loads(pkg_json.read_text(encoding="utf-8", errors="replace")).get("name")
+            if isinstance(name, str) and name.strip():
+                return name.strip()
+        except json.JSONDecodeError:
+            pass
+    for manifest in ("pyproject.toml", "Cargo.toml"):
+        mpath = pkg_dir / manifest
+        if mpath.exists():
+            try:
+                data = _load_toml(mpath)
+                name = data.get("project", {}).get("name") or data.get("package", {}).get("name")
+                if isinstance(name, str) and name.strip():
+                    return name.strip()
+            except Exception:
+                pass
+    return None
+
+
+def _package_commands(pkg_dir: Path) -> dict[str, str]:
+    """Best-effort per-package commands, read from its own manifest only."""
+    commands: dict[str, str] = {}
+    pkg_json = pkg_dir / "package.json"
+    if pkg_json.exists():
+        try:
+            scripts = json.loads(pkg_json.read_text(encoding="utf-8", errors="replace")).get(
+                "scripts"
+            )
+            if isinstance(scripts, dict):
+                if "test" in scripts:
+                    commands["test"] = "npm test"
+                if "lint" in scripts:
+                    commands["lint"] = "npm run lint"
+                if "build" in scripts:
+                    commands["build"] = "npm run build"
+        except json.JSONDecodeError:
+            pass
+    if (pkg_dir / "tests").is_dir() or list(pkg_dir.glob("test_*.py")):
+        commands.setdefault("test", "pytest")
+    return commands
+
+
+def _detect_workspaces(root: Path, profile: ProjectProfile) -> None:
+    patterns = _workspace_patterns(root)
+    if not patterns:
+        return
+    seen: set[str] = set()
+    for pkg_dir in _workspace_glob_dirs(root, patterns):
+        rel = pkg_dir.relative_to(root).as_posix()
+        if rel in seen:
+            continue
+        if _package_manifest_name(pkg_dir) is None:
+            continue  # a dir without its own manifest is not a package
+        seen.add(rel)
+        profile.workspaces.append(
+            WorkspacePackage(
+                path=rel,
+                name=_package_manifest_name(pkg_dir) or pkg_dir.name,
+                languages=_count_languages(pkg_dir),
+                commands=_package_commands(pkg_dir),
+            )
+        )
+    if profile.workspaces:
+        profile.monorepo = True
 
 
 def _detect_existing_rules(root: Path, profile: ProjectProfile) -> None:

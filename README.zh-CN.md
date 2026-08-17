@@ -211,7 +211,7 @@ write_rules(rules, "./my-project")
 
 - **轻量代码语义检测**：采样几个有代表性的源文件来识别命名和布局约定，而不是只靠配置文件和扩展名推断。
 - ~~**漂移检测**~~——**0.2.0 已发布**：`ruleforge check` 会在规则落后于项目（换包管理器、换测试框架、新框架、上了 CI）时给出提示，出现 error 级漂移直接让 CI 挂掉。
-- **monorepo 分包规则**：识别 workspace，按包生成各自作用域的规则文件，而不只是仓库根目录一套。
+- ~~**monorepo 分包规则**~~——**0.4.0 已发布**：从 `pnpm-workspace.yaml`、`package.json` 的 `workspaces`、Cargo `[workspace]` members 读取工作区，`ruleforge generate --per-package` 会给每个包写一个作用域化的 `CLAUDE.md`（包自己的技术栈和命令），已有文件默认保留，除非加 `--overwrite`。
 
 ## 参与贡献
 

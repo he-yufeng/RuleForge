@@ -11,7 +11,7 @@ from rich.table import Table
 
 from ruleforge.analyzer import analyze_project
 from ruleforge.audit import audit_project
-from ruleforge.generator import RuleFormat, generate_rules, write_rules
+from ruleforge.generator import RuleFormat, generate_package_rules, generate_rules, write_rules
 from ruleforge.lint import lint_rules
 
 console = Console()
@@ -69,6 +69,10 @@ def scan(project_dir: str):
         table.add_row("Entry Points", ", ".join(profile.entry_points))
     if profile.monorepo:
         table.add_row("Monorepo", "Yes")
+    if profile.workspaces:
+        table.add_row(
+            "Workspace Packages", ", ".join(f"{ws.name} ({ws.path})" for ws in profile.workspaces)
+        )
     if profile.python_version:
         table.add_row("Python Version", profile.python_version)
     if profile.node_version:
@@ -107,12 +111,18 @@ def scan(project_dir: str):
 @click.option("--overwrite", is_flag=True, help="Overwrite existing rule files.")
 @click.option("--dry-run", is_flag=True, help="Preview without writing files.")
 @click.option("-o", "--output", type=click.Path(), help="Output directory (default: project dir).")
+@click.option(
+    "--per-package",
+    is_flag=True,
+    help="In a monorepo, also write a scoped CLAUDE.md into each detected workspace package.",
+)
 def generate(
     project_dir: str,
     formats: tuple[str, ...],
     overwrite: bool,
     dry_run: bool,
     output: str | None,
+    per_package: bool,
 ):
     """Generate AI assistant rule files for a project."""
     profile = analyze_project(project_dir)
@@ -125,6 +135,9 @@ def generate(
         fmt_list = list(formats)  # type: ignore
 
     rules = generate_rules(profile, fmt_list)
+
+    if per_package:
+        rules += generate_package_rules(profile)
 
     if not rules:
         console.print("[yellow]No rules generated.[/yellow]")
