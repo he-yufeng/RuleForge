@@ -69,9 +69,9 @@ def test_js_camel_case_and_colocated_tests_detected(tmp_path):
     (tmp_path / "package.json").write_text('{"name": "x"}\n')
     src = tmp_path / "src"
     src.mkdir()
-    body = "\n".join(
-        f"function doThing{i}(a) {{ return a; }}\n" for i in range(6)
-    ) + "\n".join(f"const makeIt{i} = (a) => a;\n" for i in range(4))
+    body = "\n".join(f"function doThing{i}(a) {{ return a; }}\n" for i in range(6)) + "\n".join(
+        f"const makeIt{i} = (a) => a;\n" for i in range(4)
+    )
     (src / "main.ts").write_text(body)
     (src / "main.test.ts").write_text("test('x', () => {})\n")
     profile = analyze_project(tmp_path)

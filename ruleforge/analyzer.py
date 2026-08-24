@@ -665,7 +665,6 @@ def _detect_existing_rules(root: Path, profile: ProjectProfile) -> None:
         profile.extra["existing_rules"] = existing
 
 
-
 _NAME_OK_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _PY_DEF_RE = re.compile(r"^def ([A-Za-z_][A-Za-z0-9_]*)\s*\(", re.MULTILINE)
 _PY_CLASS_RE = re.compile(r"^class ([A-Za-z_][A-Za-z0-9_]*)\b", re.MULTILINE)
