@@ -37,6 +37,7 @@ RuleForge generates accurate, stack-aware rules in seconds by actually reading y
 | **Test Frameworks** | pytest, unittest, vitest, jest, mocha |
 | **CI Systems** | GitHub Actions, GitLab CI, CircleCI, Jenkins |
 | **Project Commands** | package scripts, Python CLI entry points, and the real verification commands used by GitHub Actions |
+| **Code Conventions** | naming style (snake_case/camelCase/PascalCase) and test layout sampled from representative sources, asserted only when the majority is decisive |
 | **Other** | Docker, Makefile, monorepo structure, entry points, .gitignore patterns |
 
 Language counts respect `.gitignore`, so generated bundles and local artifacts do not skew the detected stack.
@@ -206,7 +207,7 @@ write_rules(rules, "./my-project")
 
 ## Limitations
 
-- Detection is based on config files and file extensions — it doesn't analyze code semantics
+- Naming and test-layout detection reads a light sample of sources, but only asserts a convention when the evidence is decisive (mixed projects stay silent)
 - Generated rules are a solid starting point, not a finished product. You should review and customize them for your project's specific conventions
 - Framework detection depends on dependency declarations (pyproject.toml, package.json, etc.)
 
@@ -214,7 +215,7 @@ write_rules(rules, "./my-project")
 
 The detection-and-generate core is stable. The next steps mostly chip away at the limitations above:
 
-- **Light code-semantic detection** — sample a few representative source files for naming and layout conventions, instead of inferring everything from config files and extensions.
+- ~~**Light code-semantic detection**~~ — **shipped**: the scanner samples representative sources for naming style and test layout, and only asserts a convention when the majority is decisive.
 - ~~**Drift detection**~~ — **shipped in 0.2.0**: `ruleforge check` flags when committed rules have fallen behind the project (new package manager, test runner, framework, CI) and fails CI on error-level drift.
 - ~~**Per-package rules in a monorepo**~~ — **shipped in 0.4.0**: workspaces are read from `pnpm-workspace.yaml`, `package.json` `workspaces`, and Cargo `[workspace]` members, and `ruleforge generate --per-package` writes a scoped `CLAUDE.md` into each package (its own stack and commands), keeping existing files unless `--overwrite`.
 

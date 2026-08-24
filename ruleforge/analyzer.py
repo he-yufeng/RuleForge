@@ -665,6 +665,125 @@ def _detect_existing_rules(root: Path, profile: ProjectProfile) -> None:
         profile.extra["existing_rules"] = existing
 
 
+
+_NAME_OK_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_PY_DEF_RE = re.compile(r"^def ([A-Za-z_][A-Za-z0-9_]*)\s*\(", re.MULTILINE)
+_PY_CLASS_RE = re.compile(r"^class ([A-Za-z_][A-Za-z0-9_]*)\b", re.MULTILINE)
+_JS_FUNC_RE = re.compile(r"\bfunction\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*\(")
+_JS_ARROW_RE = re.compile(r"\bconst\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*(?:async\s*)?\(")
+_JS_TEST_RE = re.compile(r"\.(?:test|spec)\.[jt]sx?$")
+_PY_TEST_RE = re.compile(r"^(test_.*|.*_test)\.py$")
+
+
+def _name_style(name: str) -> str | None:
+    """Classify an identifier as snake / camel / pascal, ignoring dunders and
+    leading-underscore privacy marks."""
+    name = name.strip("_")
+    if not name:
+        return None
+    if "_" in name:
+        return "snake"
+    if name[0].islower():
+        return "camel"
+    if name[0].isupper():
+        return "pascal"
+    return None
+
+
+def _style_majority(names: list[str], style: str) -> bool:
+    """A naming convention is only reported when the evidence is decisive."""
+    return len(names) >= 8 and names.count(style) / len(names) >= 0.7
+
+
+def _source_files(root: Path, extensions: tuple[str, ...], limit: int) -> list[Path]:
+    """A bounded sample of source files, skipping vendor and hidden dirs."""
+    picked: list[Path] = []
+    skip_dirs = {"node_modules", ".git", "dist", "build", "venv", ".venv", "__pycache__", "vendor"}
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in skip_dirs and not d.startswith(".")]
+        for name in sorted(filenames):
+            if name.endswith(extensions):
+                picked.append(Path(dirpath) / name)
+                if len(picked) >= limit:
+                    return picked
+    return picked
+
+
+def _read_head(path: Path, limit: int = 12_000) -> str:
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            return fh.read(limit)
+    except OSError:
+        return ""
+
+
+def _sample_code_conventions(root: Path, profile: ProjectProfile) -> None:
+    """Infer naming and test-layout conventions from a light sample of sources.
+
+    Findings land in ``profile.conventions`` only when the sampled majority is
+    decisive (>= 8 identifiers, >= 70% one style); mixed evidence stays silent
+    rather than assert a convention the project does not have.
+    """
+    if "Python" in profile.languages:
+        func_names: list[str] = []
+        class_names: list[str] = []
+        test_in_dir = 0
+        test_colocated = 0
+        for path in _source_files(root, (".py",), 20):
+            rel_parts = path.relative_to(root).parts
+            is_test = _PY_TEST_RE.match(path.name) is not None
+            if is_test:
+                if any(part in ("tests", "test") for part in rel_parts[:-1]):
+                    test_in_dir += 1
+                else:
+                    test_colocated += 1
+                continue
+            text = _read_head(path)
+            func_names.extend(_PY_DEF_RE.findall(text))
+            class_names.extend(_PY_CLASS_RE.findall(text))
+
+        func_styles = [s for s in (_name_style(n) for n in func_names) if s]
+        if _style_majority(func_styles, "snake"):
+            profile.conventions.append("snake_case for functions and variables")
+        elif _style_majority(func_styles, "camel"):
+            profile.conventions.append("camelCase for functions and variables")
+        class_styles = [s for s in (_name_style(n) for n in class_names) if s]
+        if _style_majority(class_styles, "pascal"):
+            profile.conventions.append("PascalCase for classes")
+
+        if test_in_dir and not test_colocated:
+            profile.conventions.append("tests live in tests/ directories")
+        elif test_colocated and not test_in_dir:
+            profile.conventions.append("tests are co-located with sources")
+
+    if "TypeScript" in profile.languages or "JavaScript" in profile.languages:
+        names: list[str] = []
+        test_colocated = 0
+        test_in_dir = 0
+        for path in _source_files(root, (".ts", ".js"), 20):
+            rel_parts = path.relative_to(root).parts
+            if _JS_TEST_RE.search(path.name):
+                if any(part in ("__tests__", "tests", "test") for part in rel_parts[:-1]):
+                    test_in_dir += 1
+                else:
+                    test_colocated += 1
+                continue
+            text = _read_head(path)
+            names.extend(_JS_FUNC_RE.findall(text))
+            names.extend(_JS_ARROW_RE.findall(text))
+
+        styles = [s for s in (_name_style(n) for n in names) if s]
+        if _style_majority(styles, "camel"):
+            profile.conventions.append("camelCase for functions and variables")
+        elif _style_majority(styles, "snake"):
+            profile.conventions.append("snake_case for functions and variables")
+
+        if test_in_dir and not test_colocated:
+            profile.conventions.append("tests live in __tests__ or tests/ directories")
+        elif test_colocated and not test_in_dir:
+            profile.conventions.append("tests are co-located with sources")
+
+
 def analyze_project(project_dir: str | Path) -> ProjectProfile:
     """Scan a project directory and return a profile of its tech stack and conventions.
 
@@ -696,6 +815,7 @@ def analyze_project(project_dir: str | Path) -> ProjectProfile:
     _detect_ci(root, profile)
     _detect_misc(root, profile)
     _detect_existing_rules(root, profile)
+    _sample_code_conventions(root, profile)
 
     return profile
 
